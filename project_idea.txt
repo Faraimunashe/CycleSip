@@ -1,0 +1,279 @@
+📌 MASTER SYSTEM PROMPT — RIDER-DRIVEN LIQUOR DELIVERY MARKETPLACE
+
+You are building a multi-vendor alcohol delivery marketplace platform designed for a university zone with future scalability to cities and nationwide coverage.
+
+The system enables customers (18+) to order alcoholic beverages (beer, whisky, vodka, wine, spirits) from multiple liquor stores and receive delivery via bicycle riders.
+
+The platform is a real-time, rider-driven logistics marketplace, not a traditional store-managed system.
+
+It uses:
+
+Laravel 12 (Backend + API + Business Logic)
+Inertia.js + Vue.js (Admin + Store + Internal Dashboards)
+Laratrust (Role & Permission Management)
+Future Mobile App (React Native Expo optional expansion)
+🧠 CORE SYSTEM CONCEPT
+
+This system operates as a:
+
+Live delivery marketplace where riders compete to accept and fulfill orders
+
+Instead of system-assigned delivery, all orders are broadcast to a live rider marketplace where riders independently choose which orders to accept.
+
+This creates a competitive, incentive-driven delivery ecosystem.
+
+👤 SYSTEM ROLES
+1. CUSTOMER (18+ Mobile/Web User)
+
+Customers can:
+
+register and verify age (mandatory 18+)
+browse nearby liquor stores based on location
+view store-specific product catalogs
+place orders
+pay using Cash, EcoCash, InnBucks, Swipe
+track orders in real time
+receive notifications
+rate riders and service
+view order history and reorder
+2. RIDER (CORE OPERATIONAL WORKER — BICYCLE COURIER)
+
+Riders are independent contractors who operate in a competitive open-order marketplace.
+
+They can:
+
+go online/offline
+view a live feed of available orders
+accept orders on a first-come-first-served basis
+compete with other riders for orders
+travel to stores for pickup
+verify stock and collect items
+handle substitutions or adjustments if needed
+deliver orders to customers
+confirm delivery using OTP or verification code
+track earnings and delivery history
+
+Riders are the primary execution layer of the entire system.
+
+3. STORE (PASSIVE VENDOR — NO SYSTEM OPERATION REQUIRED)
+
+Stores are intentionally kept low-tech.
+
+They:
+
+provide alcohol inventory physically
+sell items to riders at agreed prices
+do NOT manage orders digitally
+do NOT update statuses in the system
+do NOT interact with the platform app
+
+Stores only:
+
+receive sales reports
+receive payments/reconciliation
+continue normal physical operations
+
+This ensures easy onboarding and scalability.
+
+4. ADMIN (PLATFORM OPERATOR)
+
+Admin controls the entire ecosystem using Laravel + Inertia + Vue dashboards.
+
+Admin can:
+
+manage stores and onboarding
+manage riders and performance
+monitor all orders in real time
+define delivery zones and pricing rules
+configure commissions and payouts
+resolve disputes and refunds
+enforce age verification compliance
+monitor analytics and revenue
+control system-wide operations
+🏪 MARKETPLACE STRUCTURE
+
+The platform is a multi-store marketplace system.
+
+Stores
+
+Each store includes:
+
+name
+location (latitude/longitude)
+operating hours
+delivery coverage zone
+status (active/inactive)
+Products
+
+Products exist as a global catalog but are mapped per store.
+
+Each store defines:
+
+product availability
+pricing per product
+stock levels (optional)
+active/inactive status
+Store Products (Critical Relationship)
+
+A product can exist in multiple stores with different:
+
+prices
+availability
+stock levels
+
+This enables:
+
+price competition
+redundancy in supply
+better customer choice
+📦 RIDER-DRIVEN ORDER WORKFLOW (CORE SYSTEM)
+Step 1: Customer places order
+
+Customer selects:
+
+store
+products
+payment method
+
+System calculates:
+
+item total
+delivery fee
+final amount
+Step 2: Order enters LIVE RIDER MARKETPLACE
+
+The order becomes visible in a real-time public order feed.
+
+All online riders can see:
+
+pickup store
+estimated payout
+distance estimate
+time created
+Step 3: Rider Competition (FIRST TO ACCEPT WINS)
+
+Riders compete to accept the order.
+
+Rules:
+
+first rider to accept locks the order
+order becomes unavailable immediately after acceptance
+Step 4: Rider goes to store
+
+Rider physically visits the store and:
+
+verifies product availability
+confirms stock
+handles substitutions if necessary
+collects items
+Step 5: Order processing at store (by rider)
+
+Rider:
+
+updates system status in real time
+confirms collected items
+adjusts order if items are missing
+Step 6: Delivery to customer
+
+Rider delivers order and:
+
+verifies customer age (18+ enforcement)
+confirms delivery using OTP or code
+completes order
+Step 7: Completion & settlement
+
+System:
+
+marks order complete
+calculates rider earnings
+calculates store payout
+applies platform commission
+🔄 ORDER STATUS FLOW
+
+The system tracks detailed real-time states:
+
+pending
+broadcast_to_riders
+accepted_by_rider
+en_route_to_store
+verifying_stock
+collecting_items
+adjusted
+en_route_to_customer
+delivered
+completed
+cancelled
+
+All rider actions are logged for transparency and dispute handling.
+
+📍 DELIVERY SYSTEM
+delivery zones are defined per store or region
+bicycle riders are used for cost efficiency
+real-time GPS tracking enabled
+dynamic delivery fees based on distance and zone
+ETA shown to customers
+🔞 AGE VERIFICATION SYSTEM
+
+Because alcohol is sold:
+
+users must be 18+
+DOB verification required at registration
+optional ID verification for compliance
+riders must confirm age at delivery
+
+Non-compliant deliveries are rejected.
+
+💰 REVENUE MODEL
+
+The platform earns from:
+
+delivery fees (shared with riders)
+store commissions
+surge pricing during peak demand
+featured store listings
+promotional placements
+bulk/party order pricing
+⚙️ TECH STACK
+Backend
+Laravel 12
+REST API + Business Logic Layer
+Laravel Queues
+WebSockets (optional for real-time updates)
+Admin & Internal System
+Inertia.js
+Vue.js
+Tailwind CSS
+Laratrust (roles & permissions)
+
+Roles managed via Laratrust:
+
+Admin
+Rider
+Store (optional future extension)
+Support Staff
+Authentication & Security
+Laravel Sanctum or session auth for Inertia
+secure role-based access via Laratrust
+strict age verification enforcement
+🧠 CORE DESIGN PRINCIPLES
+
+The system must always follow:
+
+Rider-driven marketplace (not system-assigned delivery)
+First-come-first-served order competition
+Stores are passive (no app usage required)
+Real-time order broadcasting system
+Strong audit trail for all rider actions
+Location-based delivery zones
+Scalable multi-store architecture
+High reliability in low-tech environments
+🚀 SCALABILITY VISION
+
+The platform starts in a university zone and expands into:
+
+multiple campuses
+suburbs
+full cities
+national coverage
+
+New stores and delivery zones can be added without changing core architecture.
