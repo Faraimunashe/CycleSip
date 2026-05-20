@@ -23,6 +23,9 @@ class OrderResource extends JsonResource
             'platform_commission' => (float) $this->platform_commission,
             'delivery_address' => $this->delivery_address,
             'customer_phone' => $this->customer_phone,
+            'recipient_name' => $this->recipient_name,
+            'recipient_phone' => $this->recipient_phone,
+            'delivery_instructions' => $this->delivery_instructions,
             'notes' => $this->notes,
             'store' => $this->whenLoaded('store', fn () => [
                 'id' => $this->store?->id,
@@ -36,8 +39,12 @@ class OrderResource extends JsonResource
                 'id' => $this->rider?->id,
                 'name' => $this->rider?->name,
             ]),
-            'items' => OrderItemResource::collection($this->whenLoaded('items')),
-            'timeline' => OrderTimelineResource::collection($this->whenLoaded('timeline')),
+            'items' => $this->relationLoaded('items')
+                ? OrderItemResource::collection($this->items)->resolve()
+                : [],
+            'timeline' => $this->relationLoaded('timeline')
+                ? OrderTimelineResource::collection($this->timeline)->resolve()
+                : [],
             'created_at' => optional($this->created_at)?->toIso8601String(),
             'updated_at' => optional($this->updated_at)?->toIso8601String(),
         ];

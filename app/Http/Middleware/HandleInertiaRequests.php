@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\UserAddress;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -35,6 +36,27 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $selectedAddressId = $request->session()->get('selected_delivery_address_id');
+        $selectedAddress = null;
+
+        if ($request->user() && $selectedAddressId) {
+            /** @var UserAddress|null $resolvedAddress */
+            $resolvedAddress = $request->user()
+                ->addresses()
+                ->where('id', $selectedAddressId)
+                ->first();
+
+            if ($resolvedAddress) {
+                $selectedAddress = [
+                    'id' => $resolvedAddress->id,
+                    'label' => $resolvedAddress->label,
+                    'address_line' => $resolvedAddress->address_line,
+                    'latitude' => $resolvedAddress->latitude,
+                    'longitude' => $resolvedAddress->longitude,
+                ];
+            }
+        }
+
         return [
             ...parent::share($request),
             'auth' => [
@@ -52,6 +74,10 @@ class HandleInertiaRequests extends Middleware
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),
                 'error' => fn () => $request->session()->get('error'),
+            ],
+            'delivery' => [
+                'address_required' => (bool) $request->session()->get('address_selection_required', false),
+                'selected_address' => $selectedAddress,
             ],
         ];
     }

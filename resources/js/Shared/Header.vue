@@ -10,18 +10,32 @@
       </div>
       <nav class="flex flex-wrap items-center gap-2 text-sm">
         <Link
-          v-if="user"
+          v-if="isCustomer"
           href="/products"
           class="rounded px-3 py-2 text-slate-700 hover:bg-indigo-50 dark:text-slate-200 dark:hover:bg-indigo-500/20"
         >
           Products
         </Link>
         <Link
-          v-if="user"
+          v-if="isCustomer"
           href="/orders"
           class="rounded px-3 py-2 text-slate-700 hover:bg-indigo-50 dark:text-slate-200 dark:hover:bg-indigo-500/20"
         >
           My Orders
+        </Link>
+        <Link
+          v-if="isRider"
+          href="/rider/orders/available"
+          class="rounded px-3 py-2 text-slate-700 hover:bg-indigo-50 dark:text-slate-200 dark:hover:bg-indigo-500/20"
+        >
+          Available Orders
+        </Link>
+        <Link
+          v-if="isRider"
+          href="/rider/orders/history"
+          class="rounded px-3 py-2 text-slate-700 hover:bg-indigo-50 dark:text-slate-200 dark:hover:bg-indigo-500/20"
+        >
+          Worked-On Orders
         </Link>
         <Link
           v-if="isAdmin"
@@ -47,17 +61,6 @@
         </Link>
 
         <button
-          type="button"
-          class="cursor-pointer rounded border border-indigo-100 px-3 py-2 text-slate-700 hover:bg-indigo-50 dark:border-indigo-500/35 dark:text-slate-200 dark:hover:bg-indigo-500/20"
-          @click="toggleTheme"
-        >
-          <span class="flex items-center gap-2">
-            <SunMoon class="h-4 w-4" />
-            Theme
-          </span>
-        </button>
-
-        <button
           v-if="user"
           type="button"
           class="cursor-pointer rounded border border-indigo-100 px-3 py-2 text-slate-700 hover:bg-indigo-50 dark:border-indigo-500/35 dark:text-slate-200 dark:hover:bg-indigo-500/20"
@@ -73,14 +76,13 @@
 <script setup>
 import { Link, router, usePage } from '@inertiajs/vue3';
 import { computed } from 'vue';
-import { SunMoon } from '@lucide/vue';
 import BrandMark from '@/Shared/BrandMark.vue';
-import { useTheme } from '@/composables/useTheme';
 
 const page = usePage();
 const user = computed(() => page.props.auth?.user ?? null);
 const isAdmin = computed(() => user.value?.roles?.some(role => ['super-admin', 'admin', 'operations-manager'].includes(role)));
-const { toggleTheme } = useTheme();
+const isCustomer = computed(() => user.value?.roles?.includes('customer'));
+const isRider = computed(() => user.value?.roles?.includes('rider'));
 
 const logout = () => {
   router.post('/logout');

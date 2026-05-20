@@ -3,8 +3,8 @@
 namespace App\Repositories;
 
 use App\Models\Order;
-use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class OrderRepository
 {

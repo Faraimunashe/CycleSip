@@ -32,6 +32,14 @@ class OrderWorkflowService
         Order::STATUS_CANCELLED => [],
     ];
 
+    /**
+     * @return list<string>
+     */
+    public function allowedTransitionsFrom(string $status): array
+    {
+        return $this->transitions[$status] ?? [];
+    }
+
     public function broadcastToRiders(Order $order): void
     {
         $this->transition($order, Order::STATUS_BROADCAST_TO_RIDERS, null, 'Order broadcast to riders');

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Order extends Model
 {
@@ -39,6 +40,7 @@ class Order extends Model
         'rider_id',
         'store_id',
         'delivery_zone_id',
+        'delivery_address_id',
         'status',
         'payment_method',
         'subtotal_amount',
@@ -48,7 +50,10 @@ class Order extends Model
         'payment_status',
         'delivery_address',
         'customer_phone',
+        'recipient_name',
+        'recipient_phone',
         'notes',
+        'delivery_instructions',
         'placed_at',
         'accepted_at',
         'delivered_at',
@@ -101,6 +106,14 @@ class Order extends Model
     }
 
     /**
+     * @return BelongsTo<UserAddress, $this>
+     */
+    public function deliveryAddress(): BelongsTo
+    {
+        return $this->belongsTo(UserAddress::class, 'delivery_address_id');
+    }
+
+    /**
      * @return HasMany<OrderItem, $this>
      */
     public function items(): HasMany
@@ -122,5 +135,21 @@ class Order extends Model
     public function transactions(): HasMany
     {
         return $this->hasMany(Transaction::class);
+    }
+
+    /**
+     * @return HasOne<OrderRating, $this>
+     */
+    public function orderRating(): HasOne
+    {
+        return $this->hasOne(OrderRating::class);
+    }
+
+    /**
+     * @return HasOne<RiderRating, $this>
+     */
+    public function riderRating(): HasOne
+    {
+        return $this->hasOne(RiderRating::class);
     }
 }

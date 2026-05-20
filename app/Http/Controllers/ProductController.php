@@ -3,12 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Models\Store;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ProductController extends Controller
 {
-    public function index(): Response
+    public function index(Request $request): Response
     {
         $stores = Store::query()
             ->where('is_active', true)
@@ -41,8 +42,14 @@ class ProductController extends Controller
             ])
             ->values();
 
+        $cartItems = collect($request->session()->get('cart.items', []));
+
         return Inertia::render('Products/Index', [
             'stores' => $stores,
+            'cartSummary' => [
+                'item_count' => $cartItems->sum(),
+                'line_count' => $cartItems->count(),
+            ],
         ]);
     }
 }

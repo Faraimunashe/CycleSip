@@ -6,6 +6,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Store;
 use App\Models\StoreProduct;
+use App\Models\UserAddress;
 use App\Models\User;
 use Database\Seeders\LaratrustSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -33,7 +34,7 @@ class PhaseOneFlowTest extends TestCase
             'password_confirmation' => 'password123',
         ]);
 
-        $response->assertRedirect('/products');
+        $response->assertRedirect('/addresses/select');
         $this->assertAuthenticated();
 
         $user = User::where('email', 'newcustomer@example.com')->firstOrFail();
@@ -46,6 +47,12 @@ class PhaseOneFlowTest extends TestCase
 
         $customer = User::factory()->create();
         $customer->addRole('customer');
+        $address = UserAddress::create([
+            'user_id' => $customer->id,
+            'label' => 'Home',
+            'address_line' => '12 Test Lane',
+            'is_default' => true,
+        ]);
 
         $store = Store::factory()->create();
         $product = Product::factory()->create();
@@ -56,9 +63,15 @@ class PhaseOneFlowTest extends TestCase
             'stock_quantity' => 8,
         ]);
 
-        $response = $this->actingAs($customer)->post('/orders', [
+        $response = $this
+            ->withSession([
+                'selected_delivery_address_id' => $address->id,
+                'address_selection_required' => false,
+            ])
+            ->actingAs($customer)
+            ->post('/orders', [
             'store_id' => $store->id,
-            'delivery_address' => '12 Test Lane',
+            'delivery_instructions' => 'Call once on arrival',
             'notes' => 'Ring once',
             'payment_method' => 'cash',
             'items' => [
@@ -67,7 +80,7 @@ class PhaseOneFlowTest extends TestCase
                     'quantity' => 2,
                 ],
             ],
-        ]);
+            ]);
 
         $response->assertRedirect('/orders');
 

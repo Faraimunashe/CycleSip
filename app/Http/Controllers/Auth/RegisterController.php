@@ -31,7 +31,9 @@ class RegisterController extends Controller
 
         Auth::login($user);
         $request->session()->regenerate();
+        $request->session()->put('address_selection_required', true);
+        $request->session()->forget('selected_delivery_address_id');
 
-        return to_route('products.index')->with('success', 'Account created successfully.');
+        return to_route('addresses.select')->with('success', 'Account created successfully. Add your delivery address to continue.');
     }
 }

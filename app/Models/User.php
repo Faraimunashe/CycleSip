@@ -56,6 +56,14 @@ class User extends Authenticatable implements LaratrustUser
     }
 
     /**
+     * @return HasMany<UserAddress, $this>
+     */
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(UserAddress::class)->orderByDesc('is_default')->latest();
+    }
+
+    /**
      * @return HasMany<Order, $this>
      */
     public function assignedOrders(): HasMany
@@ -101,6 +109,30 @@ class User extends Authenticatable implements LaratrustUser
     public function assignedTickets(): HasMany
     {
         return $this->hasMany(SupportTicket::class, 'assigned_to');
+    }
+
+    /**
+     * @return HasMany<OrderRating, $this>
+     */
+    public function orderRatings(): HasMany
+    {
+        return $this->hasMany(OrderRating::class);
+    }
+
+    /**
+     * @return HasMany<RiderRating, $this>
+     */
+    public function riderRatingsGiven(): HasMany
+    {
+        return $this->hasMany(RiderRating::class);
+    }
+
+    /**
+     * @return HasMany<RiderRating, $this>
+     */
+    public function riderRatingsReceived(): HasMany
+    {
+        return $this->hasMany(RiderRating::class, 'rider_id');
     }
 
     public function isActive(): bool
