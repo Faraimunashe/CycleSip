@@ -4,6 +4,7 @@ import { SnackbarService, Vue3Snackbar } from 'vue3-snackbar';
 import 'vue3-snackbar/styles';
 import '../css/app.css';
 import '@fortawesome/fontawesome-free/css/all.min.css';
+import './bootstrap/realtime';
 
 createInertiaApp({
   resolve: name => {

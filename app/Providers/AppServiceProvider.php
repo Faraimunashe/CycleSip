@@ -2,6 +2,13 @@
 
 namespace App\Providers;
 
+use App\Models\Order;
+use App\Models\RiderProfile;
+use App\Models\Store;
+use App\Policies\OrderPolicy;
+use App\Policies\RiderProfilePolicy;
+use App\Policies\StorePolicy;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -19,6 +26,41 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        Gate::before(function ($user, string $ability) {
+            if ($user->hasRole('super-admin')) {
+                return true;
+            }
+
+            return null;
+        });
+
+        Gate::policy(Order::class, OrderPolicy::class);
+        Gate::policy(Store::class, StorePolicy::class);
+        Gate::policy(RiderProfile::class, RiderProfilePolicy::class);
+
+        foreach ($this->permissionAbilities() as $ability) {
+            Gate::define($ability, fn ($user): bool => $user->hasPermission($ability));
+        }
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function permissionAbilities(): array
+    {
+        return [
+            'manage-orders',
+            'manage-riders',
+            'manage-stores',
+            'manage-users',
+            'manage-settings',
+            'view-analytics',
+            'manage-payments',
+            'manage-zones',
+            'approve-riders',
+            'approve-stores',
+            'manage-products',
+            'manage-customers',
+        ];
     }
 }

@@ -4,8 +4,55 @@
 @source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';
 @source '../**/*.js';
+@source '../**/*.vue';
 
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+/* Global rendering */
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background:
+    radial-gradient(1200px 500px at 10% -5%, rgb(99 102 241 / 10%), transparent 60%),
+    radial-gradient(900px 420px at 90% 0%, rgb(20 184 166 / 8%), transparent 60%),
+    linear-gradient(180deg, #fdfdff 0%, #f7f9ff 100%);
+}
+
+/* Glassmorphism utilities */
+.glass {
+  background: rgb(255 255 255 / 86%);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid rgb(224 231 255 / 85%);
+  box-shadow: 0 8px 24px rgb(79 70 229 / 8%);
+}
+
+.dark .glass {
+  background: rgb(15 23 42 / 62%);
+  border-color: rgb(100 116 139 / 40%);
+}
+
+/* Decorative motion helpers */
+@keyframes blob {
+  0%   { transform: translate(0px, 0px) scale(1); }
+  33%  { transform: translate(30px, -50px) scale(1.08); }
+  66%  { transform: translate(-20px, 20px) scale(0.94); }
+  100% { transform: translate(0px, 0px) scale(1); }
+}
+
+.animate-blob { animation: blob 18s infinite ease-in-out; }
+.animation-delay-2000 { animation-delay: 2s; }
+.animation-delay-4000 { animation-delay: 4s; }
+
+/* Scrollbar styling */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #f8fafc; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }

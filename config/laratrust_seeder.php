@@ -11,28 +11,55 @@ return [
      */
     'truncate_tables' => true,
 
-    'roles_structure' => [
-        'superadministrator' => [
-            'users' => 'c,r,u,d',
-            'payments' => 'c,r,u,d',
-            'profile' => 'r,u',
+    'roles_permissions' => [
+        'super-admin' => [
+            'manage-orders',
+            'manage-riders',
+            'manage-stores',
+            'manage-users',
+            'manage-settings',
+            'view-analytics',
+            'manage-payments',
+            'manage-zones',
+            'approve-riders',
+            'approve-stores',
+            'manage-products',
+            'manage-customers',
         ],
-        'administrator' => [
-            'users' => 'c,r,u,d',
-            'profile' => 'r,u',
+        'admin' => [
+            'manage-orders',
+            'manage-riders',
+            'manage-stores',
+            'manage-users',
+            'view-analytics',
+            'manage-zones',
+            'approve-riders',
+            'approve-stores',
+            'manage-products',
+            'manage-customers',
         ],
-        'user' => [
-            'profile' => 'r,u',
+        'operations-manager' => [
+            'manage-orders',
+            'manage-riders',
+            'view-analytics',
+            'manage-zones',
+            'approve-riders',
         ],
-        'role_name' => [
-            'module_1_name' => 'c,r,u,d',
+        'support-staff' => [
+            'manage-orders',
+            'manage-customers',
         ],
-    ],
-
-    'permissions_map' => [
-        'c' => 'create',
-        'r' => 'read',
-        'u' => 'update',
-        'd' => 'delete',
+        'rider' => [
+            'manage-orders',
+        ],
+        'store-manager' => [
+            'manage-stores',
+            'manage-products',
+        ],
+        'finance-officer' => [
+            'manage-payments',
+            'view-analytics',
+        ],
+        'customer' => [],
     ],
 ];

@@ -18,7 +18,7 @@ class LaratrustSeeder extends Seeder
     {
         $this->truncateLaratrustTables();
 
-        $config = Config::get('laratrust_seeder.roles_structure');
+        $config = Config::get('laratrust_seeder.roles_permissions');
 
         if ($config === null) {
             $this->command->error("The configuration has not been published. Did you run `php artisan vendor:publish --tag=\"laratrust-seeder\"`");
@@ -26,35 +26,26 @@ class LaratrustSeeder extends Seeder
             return false;
         }
 
-        $mapPermission = collect(config('laratrust_seeder.permissions_map'));
-
-        foreach ($config as $key => $modules) {
+        foreach ($config as $key => $permissionsToAssign) {
 
             // Create a new role
             $role = \App\Models\Role::firstOrCreate([
                 'name' => $key,
-                'display_name' => ucwords(str_replace('_', ' ', $key)),
-                'description' => ucwords(str_replace('_', ' ', $key))
+                'display_name' => ucwords(str_replace(['_', '-'], ' ', $key)),
+                'description' => ucwords(str_replace(['_', '-'], ' ', $key))
             ]);
             $permissions = [];
 
             $this->command->info('Creating Role '. strtoupper($key));
 
-            // Reading role permission modules
-            foreach ($modules as $module => $value) {
+            foreach ($permissionsToAssign as $permissionName) {
+                $permissions[] = \App\Models\Permission::firstOrCreate([
+                    'name' => $permissionName,
+                    'display_name' => ucwords(str_replace('-', ' ', $permissionName)),
+                    'description' => ucwords(str_replace('-', ' ', $permissionName)),
+                ])->id;
 
-                foreach (explode(',', $value) as $perm) {
-
-                    $permissionValue = $mapPermission->get($perm);
-
-                    $permissions[] = \App\Models\Permission::firstOrCreate([
-                        'name' => $module . '-' . $permissionValue,
-                        'display_name' => ucfirst($permissionValue) . ' ' . ucfirst($module),
-                        'description' => ucfirst($permissionValue) . ' ' . ucfirst($module),
-                    ])->id;
-
-                    $this->command->info('Creating Permission to '.$permissionValue.' for '. $module);
-                }
+                $this->command->info('Assigning Permission '.strtoupper($permissionName).' to '. strtoupper($key));
             }
 
             // Add all permissions to the role
