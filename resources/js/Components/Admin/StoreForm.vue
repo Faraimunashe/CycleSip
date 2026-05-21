@@ -13,17 +13,36 @@
       </div>
     </div>
 
-    <div class="grid gap-4 md:grid-cols-2">
+    <div class="grid gap-4 md:grid-cols-[auto_1fr] md:items-start">
+      <EntityImage
+        :image-url="previewUrl"
+        alt="Store logo preview"
+        placeholder-label="Store logo"
+        img-class="h-20 w-20 rounded-xl border border-indigo-100 object-cover"
+      />
       <div>
-        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Store logo URL</label>
-        <input v-model="form.logo_url" type="url" class="w-full rounded-xl border border-indigo-100 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950/70">
+        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Upload store icon/logo</label>
+        <input
+          type="file"
+          accept="image/*"
+          class="w-full rounded-xl border border-indigo-100 bg-white px-3 py-2 text-sm file:mr-3 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-3 file:py-1.5 file:text-xs file:font-semibold file:text-indigo-700 dark:border-slate-700 dark:bg-slate-950/70"
+          @change="handleLogoSelect"
+        >
+        <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">PNG, JPG, WEBP up to 5MB.</p>
+        <p v-if="form.errors.logo" class="mt-1 text-xs text-rose-600">{{ form.errors.logo }}</p>
         <p v-if="form.errors.logo_url" class="mt-1 text-xs text-rose-600">{{ form.errors.logo_url }}</p>
+
+        <label v-if="existingImageUrl" class="mt-2 inline-flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+          <input v-model="form.remove_logo" type="checkbox" class="rounded border-slate-300">
+          Remove current logo
+        </label>
       </div>
-      <div>
-        <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Phone</label>
-        <input v-model="form.phone" type="text" class="w-full rounded-xl border border-indigo-100 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950/70">
-        <p v-if="form.errors.phone" class="mt-1 text-xs text-rose-600">{{ form.errors.phone }}</p>
-      </div>
+    </div>
+
+    <div>
+      <label class="mb-1 block text-sm font-medium text-slate-700 dark:text-slate-300">Phone</label>
+      <input v-model="form.phone" type="text" class="w-full rounded-xl border border-indigo-100 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950/70">
+      <p v-if="form.errors.phone" class="mt-1 text-xs text-rose-600">{{ form.errors.phone }}</p>
     </div>
 
     <div>
@@ -65,10 +84,19 @@
 </template>
 
 <script setup>
-defineProps({
+import { computed, ref } from 'vue';
+import EntityImage from '@/Components/Admin/EntityImage.vue';
+
+defineEmits(['submit']);
+
+const props = defineProps({
   form: {
     type: Object,
     required: true,
+  },
+  existingImageUrl: {
+    type: String,
+    default: '',
   },
   submitLabel: {
     type: String,
@@ -76,5 +104,28 @@ defineProps({
   },
 });
 
-defineEmits(['submit']);
+const uploadedPreviewUrl = ref('');
+
+const previewUrl = computed(() => {
+  if (props.form.remove_logo) {
+    return uploadedPreviewUrl.value;
+  }
+
+  return uploadedPreviewUrl.value || props.existingImageUrl;
+});
+
+const handleLogoSelect = event => {
+  const [file] = event.target.files || [];
+  props.form.logo = file || null;
+  props.form.remove_logo = false;
+
+  if (uploadedPreviewUrl.value) {
+    URL.revokeObjectURL(uploadedPreviewUrl.value);
+    uploadedPreviewUrl.value = '';
+  }
+
+  if (file) {
+    uploadedPreviewUrl.value = URL.createObjectURL(file);
+  }
+};
 </script>

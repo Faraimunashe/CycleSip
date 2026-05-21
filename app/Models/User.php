@@ -7,7 +7,9 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -22,6 +24,7 @@ use Laratrust\Traits\HasRolesAndPermissions;
     'age_verified_at',
     'status',
     'last_seen_at',
+    'selected_delivery_address_id',
     'password',
 ])]
 #[Hidden(['password', 'remember_token'])]
@@ -135,8 +138,50 @@ class User extends Authenticatable implements LaratrustUser
         return $this->hasMany(RiderRating::class, 'rider_id');
     }
 
+    /**
+     * @return HasMany<UserIdentityDocument, $this>
+     */
+    public function identityDocuments(): HasMany
+    {
+        return $this->hasMany(UserIdentityDocument::class);
+    }
+
+    /**
+     * @return BelongsTo<UserAddress, $this>
+     */
+    public function selectedDeliveryAddress(): BelongsTo
+    {
+        return $this->belongsTo(UserAddress::class, 'selected_delivery_address_id');
+    }
+
+    /**
+     * @return HasMany<CartItem, $this>
+     */
+    public function cartItems(): HasMany
+    {
+        return $this->hasMany(CartItem::class);
+    }
+
+    /**
+     * @return HasOne<RiderProfile, $this>
+     */
+    public function riderProfile(): HasOne
+    {
+        return $this->hasOne(RiderProfile::class);
+    }
+
     public function isActive(): bool
     {
         return $this->status === 'active';
+    }
+
+    public function hasVerifiedEmail(): bool
+    {
+        return $this->email_verified_at !== null;
+    }
+
+    public function isAgeVerified(): bool
+    {
+        return $this->age_verified_at !== null;
     }
 }

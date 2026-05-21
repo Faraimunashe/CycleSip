@@ -8,7 +8,7 @@
         <p class="text-sm text-slate-600 dark:text-slate-400">Add a new store entity with operational and branding information.</p>
       </header>
 
-      <StoreForm :form="form" submit-label="Create store" @submit="submit" />
+      <StoreForm :form="form" :existing-image-url="store.logo_url || ''" submit-label="Create store" @submit="submit" />
     </div>
   </AdminLayout>
 </template>
@@ -26,10 +26,22 @@ const props = defineProps({
 });
 
 const form = useForm({
-  ...props.store,
+  name: props.store.name,
+  logo_url: props.store.logo_url || '',
+  logo: null,
+  remove_logo: false,
+  slug: props.store.slug,
+  address: props.store.address,
+  phone: props.store.phone || '',
+  opening_time: props.store.opening_time || '',
+  closing_time: props.store.closing_time || '',
+  commission_rate: props.store.commission_rate,
+  is_active: props.store.is_active,
 });
 
 const submit = () => {
-  form.post('/admin/stores');
+  form.post('/admin/stores', {
+    forceFormData: true,
+  });
 };
 </script>

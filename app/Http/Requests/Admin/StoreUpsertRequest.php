@@ -20,6 +20,8 @@ class StoreUpsertRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:120'],
             'logo_url' => ['nullable', 'url', 'max:255'],
+            'logo' => ['nullable', 'image', 'max:5120'],
+            'remove_logo' => ['nullable', 'boolean'],
             'slug' => [
                 'required',
                 'string',

@@ -66,6 +66,8 @@ class HandleInertiaRequests extends Middleware
                         'name' => $request->user()->name,
                         'email' => $request->user()->email,
                         'status' => $request->user()->status,
+                        'email_verified_at' => optional($request->user()->email_verified_at)?->toIso8601String(),
+                        'age_verified_at' => optional($request->user()->age_verified_at)?->toIso8601String(),
                         'roles' => $request->user()->roles->pluck('name')->values(),
                         'permissions' => $request->user()->permissions->pluck('name')->values(),
                     ]

@@ -8,7 +8,7 @@
         <p class="text-sm text-slate-600 dark:text-slate-400">Update store details, schedule, and logo.</p>
       </header>
 
-      <StoreForm :form="form" submit-label="Update store" @submit="submit" />
+      <StoreForm :form="form" :existing-image-url="store.logo_url || ''" submit-label="Update store" @submit="submit" />
     </div>
   </AdminLayout>
 </template>
@@ -28,6 +28,8 @@ const props = defineProps({
 const form = useForm({
   name: props.store.name,
   logo_url: props.store.logo_url || '',
+  logo: null,
+  remove_logo: false,
   slug: props.store.slug,
   address: props.store.address,
   phone: props.store.phone || '',
@@ -35,9 +37,12 @@ const form = useForm({
   closing_time: props.store.closing_time || '',
   commission_rate: props.store.commission_rate,
   is_active: props.store.is_active,
+  _method: 'put',
 });
 
 const submit = () => {
-  form.put(`/admin/stores/${props.store.id}`);
+  form.post(`/admin/stores/${props.store.id}`, {
+    forceFormData: true,
+  });
 };
 </script>

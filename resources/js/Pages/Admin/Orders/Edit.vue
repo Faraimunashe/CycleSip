@@ -79,6 +79,27 @@
           </button>
         </div>
       </form>
+
+      <section class="rounded-2xl border border-indigo-100/90 bg-white/95 p-5 shadow-sm backdrop-blur-xl dark:border-slate-700/45 dark:bg-slate-900/60">
+        <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Timeline Preview</h3>
+        <ul v-if="order.timeline?.length" class="space-y-3">
+          <li
+            v-for="entry in order.timeline"
+            :key="entry.id"
+            class="relative rounded-xl border border-indigo-100/70 bg-white/80 px-4 py-3 pl-10 text-sm dark:border-slate-700/50 dark:bg-slate-900/30"
+          >
+            <span class="absolute left-4 top-4 h-2.5 w-2.5 rounded-full bg-indigo-500" />
+            <span class="absolute left-[20px] top-7 h-[calc(100%-22px)] w-px bg-indigo-100" />
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <p class="font-semibold text-slate-800 dark:text-slate-100">{{ formatStatus(entry.status) }}</p>
+              <p class="text-xs text-slate-500">{{ formatDate(entry.created_at) }}</p>
+            </div>
+            <p class="mt-1 text-slate-600 dark:text-slate-300">{{ entry.note || 'No note' }}</p>
+            <p v-if="entry.changed_by_name" class="mt-1 text-xs text-slate-500">By: {{ entry.changed_by_name }}</p>
+          </li>
+        </ul>
+        <p v-else class="text-sm text-slate-500 dark:text-slate-400">No timeline entries yet.</p>
+      </section>
     </div>
   </AdminLayout>
 </template>
@@ -129,4 +150,7 @@ const submitItemAdjustments = () => {
 
   itemForm.patch(`/admin/orders/${props.order.id}/items`);
 };
+
+const formatStatus = (value) => value ? value.replaceAll('_', ' ') : '-';
+const formatDate = (value) => value ? new Date(value).toLocaleString() : 'N/A';
 </script>

@@ -35,6 +35,10 @@ class LoginController extends Controller
         $user = $request->user();
 
         if ($user->hasRole('customer')) {
+            if ($user->email_verified_at === null) {
+                return to_route('verification.notice')->with('success', 'Welcome back. Verify your email to continue.');
+            }
+
             $request->session()->put('address_selection_required', true);
             $request->session()->forget('selected_delivery_address_id');
 

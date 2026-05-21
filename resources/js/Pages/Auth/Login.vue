@@ -74,10 +74,16 @@
               <input v-model="form.remember" type="checkbox" class="rounded border-slate-300">
               Keep me signed in
             </label>
-            <Link href="/register" class="text-sm font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-300 dark:hover:text-indigo-200">
-              Create account
+            <Link href="/forgot-password" class="text-sm font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-300 dark:hover:text-indigo-200">
+              Forgot password?
             </Link>
           </div>
+
+          <p class="text-center text-sm text-slate-600">
+            <Link href="/register" class="font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-300 dark:hover:text-indigo-200">
+              Create account
+            </Link>
+          </p>
 
           <button
             type="submit"

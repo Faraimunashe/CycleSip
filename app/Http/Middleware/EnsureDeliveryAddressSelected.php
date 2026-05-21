@@ -21,7 +21,7 @@ class EnsureDeliveryAddressSelected
             return $next($request);
         }
 
-        if ($request->routeIs('addresses.*') || $request->routeIs('logout')) {
+        if ($request->routeIs('addresses.*') || $request->routeIs('logout') || $request->routeIs('compliance.*')) {
             return $next($request);
         }
 

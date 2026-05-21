@@ -30,11 +30,13 @@ class PhaseOneFlowTest extends TestCase
         $response = $this->post('/register', [
             'name' => 'New Customer',
             'email' => 'newcustomer@example.com',
+            'phone' => '+263771234567',
+            'date_of_birth' => now()->subYears(25)->format('Y-m-d'),
             'password' => 'password123',
             'password_confirmation' => 'password123',
         ]);
 
-        $response->assertRedirect('/addresses/select');
+        $response->assertRedirect('/email/verify');
         $this->assertAuthenticated();
 
         $user = User::where('email', 'newcustomer@example.com')->firstOrFail();

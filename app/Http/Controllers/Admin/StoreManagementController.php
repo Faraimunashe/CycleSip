@@ -7,6 +7,7 @@ use App\Http\Requests\Admin\StoreUpsertRequest;
 use App\Models\Store;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -37,7 +38,7 @@ class StoreManagementController extends Controller
 
     public function store(StoreUpsertRequest $request): RedirectResponse
     {
-        $store = Store::create($request->validated() + [
+        $store = Store::create($this->buildStorePayload($request) + [
             'approved_at' => now(),
             'approved_by' => $request->user()->id,
         ]);
@@ -63,7 +64,7 @@ class StoreManagementController extends Controller
 
     public function update(StoreUpsertRequest $request, Store $store): RedirectResponse
     {
-        $store->update($request->validated());
+        $store->update($this->buildStorePayload($request, $store));
 
         return to_route('admin.stores.show', $store)->with('success', 'Store updated successfully.');
     }
@@ -112,6 +113,7 @@ class StoreManagementController extends Controller
         return [
             'name' => '',
             'logo_url' => '',
+            'remove_logo' => false,
             'slug' => '',
             'address' => '',
             'phone' => '',
@@ -120,5 +122,41 @@ class StoreManagementController extends Controller
             'commission_rate' => 15,
             'is_active' => true,
         ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildStorePayload(StoreUpsertRequest $request, ?Store $store = null): array
+    {
+        $payload = $request->safe()->except(['logo', 'remove_logo']);
+
+        if ($store && $request->boolean('remove_logo')) {
+            $this->deleteStoredLogo($store->logo_url);
+            $payload['logo_url'] = null;
+        }
+
+        if ($request->hasFile('logo')) {
+            if ($store) {
+                $this->deleteStoredLogo($store->logo_url);
+            }
+
+            $payload['logo_url'] = Storage::url($request->file('logo')->store('stores', 'public'));
+        }
+
+        return $payload;
+    }
+
+    private function deleteStoredLogo(?string $logoUrl): void
+    {
+        if (! $logoUrl || ! str_starts_with($logoUrl, '/storage/')) {
+            return;
+        }
+
+        $path = ltrim(str_replace('/storage/', '', $logoUrl), '/');
+
+        if ($path !== '') {
+            Storage::disk('public')->delete($path);
+        }
     }
 }

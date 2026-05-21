@@ -7,7 +7,10 @@
         <div class="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 class="text-2xl font-semibold text-slate-900 dark:text-slate-100">Order #{{ order.id }}</h2>
-            <p class="text-sm text-slate-500 dark:text-slate-400">Current status: {{ order.status }}</p>
+            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">Current status</p>
+            <span class="mt-1 inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-indigo-700">
+              {{ formatStatus(order.status) }}
+            </span>
           </div>
           <Link :href="`/admin/orders/${order.id}/edit`" class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500">
             Update Status
@@ -38,12 +41,23 @@
 
       <section class="rounded-2xl border border-indigo-100/90 bg-white/95 p-5 shadow-sm backdrop-blur-xl dark:border-slate-700/45 dark:bg-slate-900/60">
         <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Timeline</h3>
-        <ul class="space-y-2 text-sm text-slate-700 dark:text-slate-300">
-          <li v-for="entry in order.timeline" :key="entry.id" class="rounded-xl border border-indigo-100/70 px-3 py-2 dark:border-slate-700/50">
-            {{ entry.status }} - {{ entry.note || 'No note' }}
+        <ul v-if="order.timeline.length" class="space-y-3 text-sm text-slate-700 dark:text-slate-300">
+          <li
+            v-for="entry in order.timeline"
+            :key="entry.id"
+            class="relative rounded-xl border border-indigo-100/70 bg-white/80 px-4 py-3 pl-10 dark:border-slate-700/50 dark:bg-slate-900/30"
+          >
+            <span class="absolute left-4 top-4 h-2.5 w-2.5 rounded-full bg-indigo-500" />
+            <span class="absolute left-[20px] top-7 h-[calc(100%-22px)] w-px bg-indigo-100" />
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <p class="font-semibold text-slate-800 dark:text-slate-100">{{ formatStatus(entry.status) }}</p>
+              <p class="text-xs text-slate-500">{{ formatDate(entry.created_at) }}</p>
+            </div>
+            <p class="mt-1 text-slate-600 dark:text-slate-300">{{ entry.note || 'No note' }}</p>
+            <p v-if="entry.changed_by_name" class="mt-1 text-xs text-slate-500">By: {{ entry.changed_by_name }}</p>
           </li>
-          <li v-if="order.timeline.length === 0" class="text-slate-500 dark:text-slate-400">No timeline entries yet.</li>
         </ul>
+        <p v-else class="text-sm text-slate-500 dark:text-slate-400">No timeline entries yet.</p>
       </section>
     </div>
   </AdminLayout>
@@ -59,4 +73,7 @@ defineProps({
     required: true,
   },
 });
+
+const formatStatus = (value) => value ? value.replaceAll('_', ' ') : '-';
+const formatDate = (value) => value ? new Date(value).toLocaleString() : 'N/A';
 </script>

@@ -40,6 +40,32 @@
 
           <div class="grid gap-4 sm:grid-cols-2">
             <div>
+              <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Date of birth</label>
+              <input
+                v-model="form.date_of_birth"
+                type="date"
+                :max="maxBirthDate"
+                class="w-full rounded-xl border border-indigo-100 bg-white px-3 py-3 text-sm outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-950/70"
+              >
+              <p v-if="form.errors.date_of_birth" class="mt-1 text-xs text-rose-600">{{ form.errors.date_of_birth }}</p>
+            </div>
+
+            <div>
+              <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Phone number</label>
+              <input
+                v-model="form.phone"
+                type="tel"
+                placeholder="+263771234567"
+                class="w-full rounded-xl border border-indigo-100 bg-white px-3 py-3 text-sm outline-none transition focus:border-indigo-300 focus:ring-2 focus:ring-indigo-100 dark:border-slate-700 dark:bg-slate-950/70"
+                autocomplete="tel"
+              >
+              <p class="mt-1 text-xs text-slate-500">Zimbabwe mobile with country code, e.g. +263771234567</p>
+              <p v-if="form.errors.phone" class="mt-1 text-xs text-rose-600">{{ form.errors.phone }}</p>
+            </div>
+          </div>
+
+          <div class="grid gap-4 sm:grid-cols-2">
+            <div>
               <label class="mb-1.5 block text-sm font-medium text-slate-700 dark:text-slate-300">Password</label>
               <div class="relative">
                 <Lock class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -67,8 +93,35 @@
             </div>
           </div>
 
+          <div class="rounded-xl border border-indigo-100 bg-indigo-50/40 p-4">
+            <p class="text-sm font-semibold text-slate-800">Optional ID upload</p>
+            <p class="mt-1 text-xs text-slate-600">You can submit an ID now or later from your account for compliance review.</p>
+
+            <div class="mt-3 grid gap-3 sm:grid-cols-2">
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-700">Document type</label>
+                <select v-model="form.document_type" class="w-full rounded-xl border border-indigo-100 bg-white px-3 py-2 text-sm">
+                  <option value="">Skip for now</option>
+                  <option v-for="type in documentTypes" :key="type" :value="type">{{ formatType(type) }}</option>
+                </select>
+                <p v-if="form.errors.document_type" class="mt-1 text-xs text-rose-600">{{ form.errors.document_type }}</p>
+              </div>
+
+              <div>
+                <label class="mb-1 block text-xs font-medium text-slate-700">Upload file</label>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  class="w-full rounded-xl border border-indigo-100 bg-white px-3 py-2 text-sm file:mr-2 file:rounded-lg file:border-0 file:bg-indigo-50 file:px-2 file:py-1 file:text-xs file:font-semibold file:text-indigo-700"
+                  @change="handleIdSelect"
+                >
+                <p v-if="form.errors.id_document" class="mt-1 text-xs text-rose-600">{{ form.errors.id_document }}</p>
+              </div>
+            </div>
+          </div>
+
           <p class="text-xs leading-relaxed text-slate-500 dark:text-slate-400">
-            By creating an account, you confirm you are 18+ and agree to CycleSip compliance and platform policies.
+            You must be 18+ to register. Alcohol delivery requires strict age compliance.
           </p>
 
           <div class="flex items-center justify-between gap-2">
@@ -117,19 +170,46 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import { Head, Link, useForm } from '@inertiajs/vue3';
 import { CheckCircle2, Lock, Mail, ShieldCheck, UserRound } from '@lucide/vue';
 import AuthLayout from '@/Shared/AuthLayout.vue';
 import authCardBg from '@/../images/logo2.png';
 
+const props = defineProps({
+  documentTypes: {
+    type: Array,
+    default: () => [],
+  },
+});
+
 const form = useForm({
   name: '',
   email: '',
+  phone: '+263',
+  date_of_birth: '',
   password: '',
   password_confirmation: '',
+  document_type: '',
+  id_document: null,
 });
 
+const maxBirthDate = computed(() => {
+  const date = new Date();
+  date.setFullYear(date.getFullYear() - 18);
+  return date.toISOString().split('T')[0];
+});
+
+const formatType = (value) => value ? value.replaceAll('_', ' ') : '';
+
+const handleIdSelect = (event) => {
+  const [file] = event.target.files || [];
+  form.id_document = file || null;
+};
+
 const submit = () => {
-  form.post('/register');
+  form.post('/register', {
+    forceFormData: true,
+  });
 };
 </script>

@@ -23,6 +23,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => EnsureUserIsAdmin::class,
             'delivery.address.selected' => EnsureDeliveryAddressSelected::class,
+            'delivery.address.api' => \App\Http\Middleware\EnsureApiDeliveryAddressSelected::class,
+            'verified.email' => \App\Http\Middleware\EnsureEmailVerified::class,
+            'verified.api.email' => \App\Http\Middleware\EnsureApiEmailVerified::class,
+            'rider.api' => \App\Http\Middleware\EnsureApiRider::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

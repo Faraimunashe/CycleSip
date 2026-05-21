@@ -9,8 +9,12 @@ use App\Http\Controllers\Admin\CustomerManagementController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FinanceController;
 use App\Http\Controllers\AddressSelectionController;
+use App\Http\Controllers\Auth\EmailVerificationController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\ResetPasswordController;
+use App\Http\Controllers\IdentityVerificationController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\RiderDashboardController;
@@ -26,9 +30,19 @@ Route::middleware('guest')->group(function (): void {
     Route::post('/register', [RegisterController::class, 'store'])->name('register.store');
     Route::get('/login', [LoginController::class, 'create'])->name('login');
     Route::post('/login', [LoginController::class, 'store'])->name('login.store');
+    Route::get('/forgot-password', [ForgotPasswordController::class, 'create'])->name('password.request');
+    Route::post('/forgot-password', [ForgotPasswordController::class, 'store'])->name('password.email');
+    Route::get('/reset-password/{token}', [ResetPasswordController::class, 'create'])->name('password.reset');
+    Route::post('/reset-password', [ResetPasswordController::class, 'store'])->name('password.update');
 });
 
 Route::middleware('auth')->group(function (): void {
+    Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
+
+    Route::get('/email/verify', [EmailVerificationController::class, 'notice'])->name('verification.notice');
+    Route::post('/email/verify', [EmailVerificationController::class, 'verify'])->name('verification.verify');
+    Route::post('/email/verification-resend', [EmailVerificationController::class, 'resend'])->name('verification.resend');
+
     Route::get('/rider/dashboard', [RiderDashboardController::class, 'index'])->name('rider.dashboard');
     Route::get('/rider/orders/available', [RiderDashboardController::class, 'available'])->name('rider.orders.available');
     Route::get('/rider/orders/history', [RiderDashboardController::class, 'history'])->name('rider.orders.history');
@@ -36,26 +50,29 @@ Route::middleware('auth')->group(function (): void {
     Route::patch('/rider/orders/{order}/accept', [RiderDashboardController::class, 'accept'])->name('rider.orders.accept');
     Route::patch('/rider/orders/{order}/status', [RiderDashboardController::class, 'updateStatus'])->name('rider.orders.status.update');
 
-    Route::get('/addresses/select', [AddressSelectionController::class, 'select'])->name('addresses.select');
-    Route::post('/addresses', [AddressSelectionController::class, 'store'])->name('addresses.store');
-    Route::post('/addresses/{address}/use', [AddressSelectionController::class, 'use'])->name('addresses.use');
+    Route::middleware('verified.email')->group(function (): void {
+        Route::get('/compliance/identity', [IdentityVerificationController::class, 'show'])->name('compliance.identity.show');
+        Route::post('/compliance/identity', [IdentityVerificationController::class, 'store'])->name('compliance.identity.store');
 
-    Route::middleware('delivery.address.selected')->group(function (): void {
-        Route::get('/products', [ProductController::class, 'index'])->name('products.index');
-        Route::post('/cart/items', [OrderController::class, 'addToCart'])->name('cart.items.store');
-        Route::patch('/cart/items/{storeProduct}', [OrderController::class, 'updateCartItem'])->name('cart.items.update');
-        Route::delete('/cart/items/{storeProduct}', [OrderController::class, 'removeCartItem'])->name('cart.items.destroy');
-        Route::delete('/cart', [OrderController::class, 'clearCart'])->name('cart.clear');
-        Route::get('/checkout', [OrderController::class, 'checkout'])->name('checkout.index');
-        Route::post('/checkout', [OrderController::class, 'processCheckout'])->name('checkout.store');
-        Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
-        Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
-        Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
-        Route::post('/orders/{order}/ratings/order', [OrderController::class, 'rateOrder'])->name('orders.ratings.order.store');
-        Route::post('/orders/{order}/ratings/rider', [OrderController::class, 'rateRider'])->name('orders.ratings.rider.store');
+        Route::get('/addresses/select', [AddressSelectionController::class, 'select'])->name('addresses.select');
+        Route::post('/addresses', [AddressSelectionController::class, 'store'])->name('addresses.store');
+        Route::post('/addresses/{address}/use', [AddressSelectionController::class, 'use'])->name('addresses.use');
+
+        Route::middleware('delivery.address.selected')->group(function (): void {
+            Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+            Route::post('/cart/items', [OrderController::class, 'addToCart'])->name('cart.items.store');
+            Route::patch('/cart/items/{storeProduct}', [OrderController::class, 'updateCartItem'])->name('cart.items.update');
+            Route::delete('/cart/items/{storeProduct}', [OrderController::class, 'removeCartItem'])->name('cart.items.destroy');
+            Route::delete('/cart', [OrderController::class, 'clearCart'])->name('cart.clear');
+            Route::get('/checkout', [OrderController::class, 'checkout'])->name('checkout.index');
+            Route::post('/checkout', [OrderController::class, 'processCheckout'])->name('checkout.store');
+            Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
+            Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
+            Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+            Route::post('/orders/{order}/ratings/order', [OrderController::class, 'rateOrder'])->name('orders.ratings.order.store');
+            Route::post('/orders/{order}/ratings/rider', [OrderController::class, 'rateRider'])->name('orders.ratings.rider.store');
+        });
     });
-
-    Route::post('/logout', [LoginController::class, 'destroy'])->name('logout');
 });
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function (): void {
@@ -152,6 +169,9 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/customers', [CustomerManagementController::class, 'index'])
         ->middleware('can:manage-customers')
         ->name('customers.index');
+    Route::patch('/customers/{customer}/identity', [CustomerManagementController::class, 'reviewIdentity'])
+        ->middleware('can:manage-customers')
+        ->name('customers.identity.review');
 
     Route::get('/finance', [FinanceController::class, 'index'])
         ->middleware('can:manage-payments')
