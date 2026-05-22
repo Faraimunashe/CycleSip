@@ -30,6 +30,7 @@ class OrderResource extends JsonResource
             'store' => $this->whenLoaded('store', fn () => [
                 'id' => $this->store?->id,
                 'name' => $this->store?->name,
+                'address' => $this->store?->address,
             ]),
             'customer' => $this->whenLoaded('user', fn () => [
                 'id' => $this->user?->id,

@@ -3,6 +3,7 @@
 namespace App\Services\Mobile;
 
 use App\Models\CartItem;
+use App\Support\MediaUrl;
 use App\Models\StoreProduct;
 use App\Models\User;
 use Illuminate\Support\Collection;
@@ -126,7 +127,7 @@ class CartService
                     'items' => $storeLines->map(fn (array $line): array => [
                         'store_product_id' => $line['store_product']->id,
                         'product_name' => $line['store_product']->product?->name,
-                        'image_url' => $line['store_product']->product?->image_url,
+                        'image_url' => MediaUrl::resolve($line['store_product']->product?->image_url),
                         'quantity' => $line['quantity'],
                         'unit_price' => $line['unit_price'],
                         'line_total' => round($line['quantity'] * $line['unit_price'], 2),

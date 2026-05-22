@@ -6,6 +6,7 @@ use App\Models\EmailVerificationCode;
 use App\Models\User;
 use App\Notifications\EmailVerificationOtpNotification;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
 
 class EmailVerificationService
@@ -24,6 +25,15 @@ class EmailVerificationService
             'code_hash' => Hash::make($plainCode),
             'expires_at' => now()->addMinutes(15),
         ]);
+
+        if (! app()->isProduction()) {
+            Log::info('Email verification OTP issued (dev only).', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'code' => $plainCode,
+                'expires_at' => now()->addMinutes(15)->toIso8601String(),
+            ]);
+        }
 
         $user->notify(new EmailVerificationOtpNotification($plainCode));
 

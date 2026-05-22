@@ -58,6 +58,7 @@ Route::prefix('v1')->group(function (): void {
     Route::middleware(['auth:sanctum', 'rider.api'])->prefix('rider')->group(function (): void {
         Route::get('dashboard', [RiderDashboardController::class, 'index']);
         Route::get('orders/available', [RiderOrderController::class, 'available']);
+        Route::get('orders/active', [RiderOrderController::class, 'active']);
         Route::get('orders/history', [RiderOrderController::class, 'history']);
         Route::get('orders/{order}', [RiderOrderController::class, 'show']);
         Route::post('orders/{order}/accept', [RiderOrderController::class, 'accept']);

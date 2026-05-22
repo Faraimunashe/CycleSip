@@ -97,6 +97,44 @@ class MobileApiTest extends TestCase
             ->assertJsonPath('code', 'delivery_address_required');
     }
 
+    public function test_catalog_returns_filters_and_supports_search(): void
+    {
+        $customer = $this->verifiedCustomer(withAddress: true);
+        $cola = $this->createStoreProduct(stock: 5, price: 10.00);
+        $cola->product->update(['name' => 'Cola Classic', 'image_url' => '/storage/products/cola.jpg']);
+        $wine = $this->createStoreProduct(stock: 3, price: 20.00);
+        $wine->product->update(['name' => 'House Red Wine', 'image_url' => '/storage/products/wine.jpg']);
+
+        Sanctum::actingAs($customer);
+
+        $catalog = $this->getJson('/api/v1/catalog')
+            ->assertOk()
+            ->assertJsonStructure([
+                'data' => [
+                    'stores',
+                    'filters' => ['categories', 'stores'],
+                    'cart_summary',
+                ],
+            ]);
+
+        $filterStoreNames = collect($catalog->json('data.filters.stores'))->pluck('name');
+        $this->assertTrue($filterStoreNames->contains($cola->store->name));
+        $this->assertTrue($filterStoreNames->contains($wine->store->name));
+
+        $searchResponse = $this->getJson('/api/v1/catalog?search=cola')->assertOk();
+        $productNames = collect($searchResponse->json('data.stores'))
+            ->flatMap(fn (array $store): array => $store['inventory'])
+            ->pluck('product_name');
+
+        $this->assertTrue($productNames->contains('Cola Classic'));
+        $this->assertFalse($productNames->contains('House Red Wine'));
+
+        $imageUrl = $searchResponse->json('data.stores.0.inventory.0.image_url');
+        $this->assertIsString($imageUrl);
+        $this->assertStringStartsWith('http', $imageUrl);
+        $this->assertStringContainsString('/storage/products/cola.jpg', $imageUrl);
+    }
+
     public function test_customer_can_manage_cart_and_checkout(): void
     {
         $customer = $this->verifiedCustomer(withAddress: true);
@@ -113,6 +151,19 @@ class MobileApiTest extends TestCase
             ->assertJsonPath('data.item_count', 2);
         $this->assertSame(20.0, (float) $cartResponse->json('data.subtotal'));
 
+        $this->patchJson("/api/v1/cart/items/{$storeProduct->id}", ['quantity' => 3])
+            ->assertOk()
+            ->assertJsonPath('data.item_count', 3);
+
+        $this->deleteJson("/api/v1/cart/items/{$storeProduct->id}")
+            ->assertOk()
+            ->assertJsonPath('data.line_count', 0);
+
+        $this->postJson('/api/v1/cart/items', [
+            'store_product_id' => $storeProduct->id,
+            'quantity' => 2,
+        ]);
+
         $checkout = $this->postJson('/api/v1/checkout', [
             'delivery_instructions' => 'Leave at gate',
             'payment_method' => 'cash',
@@ -127,6 +178,23 @@ class MobileApiTest extends TestCase
         $this->assertSame($customer->id, $order->user_id);
         $this->assertSame(Order::STATUS_BROADCAST_TO_RIDERS, $order->status);
         $this->assertSame(0, $customer->cartItems()->count());
+
+        $this->getJson("/api/v1/orders/{$order->id}")
+            ->assertOk()
+            ->assertJsonPath('data.order.id', $order->id)
+            ->assertJsonStructure([
+                'data' => [
+                    'order' => [
+                        'id',
+                        'status',
+                        'items',
+                        'timeline',
+                        'order_rating',
+                        'rider_rating',
+                        'can_rate',
+                    ],
+                ],
+            ]);
     }
 
     public function test_rider_can_access_dashboard_and_accept_order(): void
@@ -155,12 +223,43 @@ class MobileApiTest extends TestCase
 
         Sanctum::actingAs($rider);
 
-        $this->getJson('/api/v1/rider/dashboard')->assertOk();
+        $this->getJson('/api/v1/rider/dashboard')
+            ->assertOk()
+            ->assertJsonPath('data.active_orders_total', 0);
+
         $this->getJson('/api/v1/rider/orders/available')->assertOk();
+        $this->getJson('/api/v1/rider/orders/active')
+            ->assertOk()
+            ->assertJsonPath('data.meta.total', 0);
 
         $this->postJson("/api/v1/rider/orders/{$orderId}/accept")
             ->assertOk()
             ->assertJsonPath('data.order.status', Order::STATUS_ACCEPTED_BY_RIDER);
+
+        $this->getJson('/api/v1/rider/orders/active')
+            ->assertOk()
+            ->assertJsonPath('data.meta.total', 1)
+            ->assertJsonPath('data.orders.0.id', $orderId);
+
+        $this->getJson('/api/v1/rider/dashboard')
+            ->assertOk()
+            ->assertJsonPath('data.active_orders_total', 1);
+
+        $this->getJson("/api/v1/rider/orders/{$orderId}")
+            ->assertOk()
+            ->assertJsonPath('data.order.id', $orderId)
+            ->assertJsonPath('data.order.can_update_status', true)
+            ->assertJsonStructure([
+                'data' => [
+                    'order' => [
+                        'items',
+                        'timeline',
+                        'next_status_options',
+                        'order_rating',
+                        'rider_rating',
+                    ],
+                ],
+            ]);
     }
 
     public function test_customer_without_rider_role_cannot_access_rider_routes(): void

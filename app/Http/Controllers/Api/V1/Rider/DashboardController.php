@@ -22,14 +22,20 @@ class DashboardController extends Controller
     {
         $rider = $request->user();
 
-        $assignedOrders = Order::query()
+        $activeOrders = Order::query()
             ->where('rider_id', $rider->id)
+            ->whereIn('status', RiderOrderService::activeStatuses())
             ->with(['store', 'user', 'orderRating.user', 'riderRating.user'])
-            ->latest()
-            ->limit(15)
+            ->latest('updated_at')
+            ->limit(5)
             ->get()
             ->map(fn (Order $order): array => $this->riderOrderService->toListArray($order))
             ->values();
+
+        $activeCount = Order::query()
+            ->where('rider_id', $rider->id)
+            ->whereIn('status', RiderOrderService::activeStatuses())
+            ->count();
 
         return $this->ok([
             'metrics' => [
@@ -37,13 +43,7 @@ class DashboardController extends Controller
                     ->whereNull('rider_id')
                     ->where('status', Order::STATUS_BROADCAST_TO_RIDERS)
                     ->count(),
-                'active_deliveries' => $assignedOrders->whereIn('status', [
-                    Order::STATUS_ACCEPTED_BY_RIDER,
-                    Order::STATUS_EN_ROUTE_TO_STORE,
-                    Order::STATUS_VERIFYING_STOCK,
-                    Order::STATUS_COLLECTING_ITEMS,
-                    Order::STATUS_EN_ROUTE_TO_CUSTOMER,
-                ])->count(),
+                'active_deliveries' => $activeCount,
                 'completed_today' => Order::query()
                     ->where('rider_id', $rider->id)
                     ->whereDate('completed_at', today())
@@ -52,7 +52,8 @@ class DashboardController extends Controller
                     ->where('rider_id', $rider->id)
                     ->count(),
             ],
-            'assigned_orders' => $assignedOrders,
+            'active_orders' => $activeOrders,
+            'active_orders_total' => $activeCount,
         ]);
     }
 }

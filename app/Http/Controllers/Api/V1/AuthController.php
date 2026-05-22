@@ -208,6 +208,7 @@ class AuthController extends Controller
     {
         return $user->load([
             'roles',
+            'selectedDeliveryAddress',
             'identityDocuments' => fn ($query) => $query->latest()->limit(1),
             'riderProfile',
         ]);

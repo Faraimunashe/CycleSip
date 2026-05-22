@@ -41,10 +41,33 @@ class OrderController extends Controller
         ]);
     }
 
+    public function active(Request $request): JsonResponse
+    {
+        $orders = Order::query()
+            ->where('rider_id', $request->user()->id)
+            ->whereIn('status', RiderOrderService::activeStatuses())
+            ->with(['store', 'user', 'orderRating.user', 'riderRating.user'])
+            ->latest('updated_at')
+            ->paginate((int) $request->integer('per_page', 20));
+
+        return $this->ok([
+            'orders' => collect($orders->items())
+                ->map(fn (Order $order): array => $this->riderOrderService->toListArray($order))
+                ->values(),
+            'meta' => [
+                'current_page' => $orders->currentPage(),
+                'last_page' => $orders->lastPage(),
+                'per_page' => $orders->perPage(),
+                'total' => $orders->total(),
+            ],
+        ]);
+    }
+
     public function history(Request $request): JsonResponse
     {
         $orders = Order::query()
             ->where('rider_id', $request->user()->id)
+            ->whereIn('status', RiderOrderService::terminalStatuses())
             ->with(['store', 'user', 'orderRating.user', 'riderRating.user'])
             ->latest()
             ->paginate((int) $request->integer('per_page', 15));

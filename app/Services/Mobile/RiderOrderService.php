@@ -12,6 +12,35 @@ use InvalidArgumentException;
 class RiderOrderService
 {
     /**
+     * Orders the rider has accepted but not finished (still in progress).
+     *
+     * @return list<string>
+     */
+    public static function activeStatuses(): array
+    {
+        return [
+            Order::STATUS_ACCEPTED_BY_RIDER,
+            Order::STATUS_EN_ROUTE_TO_STORE,
+            Order::STATUS_VERIFYING_STOCK,
+            Order::STATUS_COLLECTING_ITEMS,
+            Order::STATUS_ADJUSTED,
+            Order::STATUS_EN_ROUTE_TO_CUSTOMER,
+            Order::STATUS_DELIVERED,
+        ];
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function terminalStatuses(): array
+    {
+        return [
+            Order::STATUS_COMPLETED,
+            Order::STATUS_CANCELLED,
+        ];
+    }
+
+    /**
      * @var list<string>
      */
     private const RIDER_MANAGEABLE_STATUSES = [
@@ -169,7 +198,13 @@ class RiderOrderService
             'rider_rating' => $order->riderRating?->rating !== null ? (int) $order->riderRating->rating : null,
             'rating_has_comment' => filled($order->riderRating?->comment) || filled($order->orderRating?->comment),
             'next_status_options' => $this->nextStatusOptions($order),
+            'is_active' => $this->isActiveForRider($order),
         ];
+    }
+
+    public function isActiveForRider(Order $order): bool
+    {
+        return in_array($order->status, self::activeStatuses(), true);
     }
 
     /**

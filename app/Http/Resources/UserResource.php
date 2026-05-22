@@ -34,6 +34,14 @@ class UserResource extends JsonResource
             'has_rider_role' => in_array('rider', $roles, true),
             'can_use_rider_mode' => in_array('rider', $roles, true),
             'selected_delivery_address_id' => $this->selected_delivery_address_id,
+            'selected_delivery_address' => $this->relationLoaded('selectedDeliveryAddress') && $this->selectedDeliveryAddress
+                ? [
+                    'id' => $this->selectedDeliveryAddress->id,
+                    'label' => $this->selectedDeliveryAddress->label,
+                    'address_line' => $this->selectedDeliveryAddress->address_line,
+                    'is_default' => (bool) $this->selectedDeliveryAddress->is_default,
+                ]
+                : null,
             'address_selection_required' => in_array('customer', $roles, true)
                 && $this->hasVerifiedEmail()
                 && $this->selected_delivery_address_id === null,
