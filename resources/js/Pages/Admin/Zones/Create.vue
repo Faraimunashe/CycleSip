@@ -8,7 +8,7 @@
         <p class="text-sm text-slate-600 dark:text-slate-400">Add a new delivery zone with radius, pricing, and ETA rules.</p>
       </header>
 
-      <ZoneForm :form="form" submit-label="Create zone" @submit="submit" />
+      <ZoneForm :form="form" :available-stores="availableStores" submit-label="Create zone" @submit="submit" />
     </div>
   </AdminLayout>
 </template>
@@ -23,10 +23,15 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  availableStores: {
+    type: Array,
+    default: () => [],
+  },
 });
 
 const form = useForm({
   ...props.zone,
+  store_ids: props.zone.store_ids || [],
 });
 
 const submit = () => {

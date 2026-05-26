@@ -94,7 +94,7 @@ class AuthComplianceTest extends TestCase
         $response = $this->post('/register', [
             'name' => 'Invalid Phone User',
             'email' => 'invalidphone@example.com',
-            'phone' => '0771234567',
+            'phone' => '12345',
             'date_of_birth' => now()->subYears(25)->format('Y-m-d'),
             'password' => 'password123',
             'password_confirmation' => 'password123',
@@ -102,6 +102,23 @@ class AuthComplianceTest extends TestCase
 
         $response->assertSessionHasErrors('phone');
         $this->assertGuest();
+    }
+
+    public function test_registration_accepts_local_zimbabwe_phone_format(): void
+    {
+        $this->seed(LaratrustSeeder::class);
+
+        $response = $this->post('/register', [
+            'name' => 'Local Phone User',
+            'email' => 'localphone@example.com',
+            'phone' => '0771234567',
+            'date_of_birth' => now()->subYears(25)->format('Y-m-d'),
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+        ]);
+
+        $response->assertRedirect('/email/verify');
+        $this->assertAuthenticated();
     }
 
     public function test_forgot_password_page_is_accessible(): void

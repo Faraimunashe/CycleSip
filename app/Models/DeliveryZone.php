@@ -20,6 +20,19 @@ class DeliveryZone extends Model
         'is_active',
     ];
 
+    protected function casts(): array
+    {
+        return [
+            'center_latitude' => 'float',
+            'center_longitude' => 'float',
+            'radius_km' => 'float',
+            'base_delivery_fee' => 'float',
+            'distance_surcharge_per_km' => 'float',
+            'estimated_minutes' => 'integer',
+            'is_active' => 'boolean',
+        ];
+    }
+
     /**
      * @return BelongsToMany<Store, $this>
      */

@@ -8,7 +8,10 @@ use App\Models\RiderRating;
 use App\Models\StoreProduct;
 use App\Models\UserAddress;
 use App\Services\ActivityLogger;
+use App\Services\OrderProgressService;
 use App\Services\OrderWorkflowService;
+use App\Services\Payments\PaymentMethodService;
+use App\Services\RiderLocationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -24,6 +27,9 @@ class OrderController extends Controller
     public function __construct(
         private readonly OrderWorkflowService $orderWorkflowService,
         private readonly ActivityLogger $activityLogger,
+        private readonly PaymentMethodService $paymentMethodService,
+        private readonly OrderProgressService $orderProgressService,
+        private readonly RiderLocationService $riderLocationService,
     ) {
     }
 
@@ -114,6 +120,7 @@ class OrderController extends Controller
                     'name' => $order->rider?->name,
                     'phone' => $order->rider?->phone,
                 ],
+                'rider_location' => $this->riderLocationService->latestForOrder($order),
                 'items' => $order->items->map(fn ($item): array => [
                     'id' => $item->id,
                     'product_id' => $item->product_id,
@@ -129,6 +136,7 @@ class OrderController extends Controller
                     'changed_by' => $entry->changedBy?->name,
                     'created_at' => optional($entry->created_at)?->toIso8601String(),
                 ])->values(),
+                'progress_steps' => $this->orderProgressService->stepsForOrder($order),
                 'order_rating' => $order->orderRating
                     ? [
                         'rating' => (int) $order->orderRating->rating,
@@ -218,8 +226,16 @@ class OrderController extends Controller
             'items' => ['required', 'array', 'min:1'],
             'items.*.store_product_id' => ['required', 'integer', 'exists:store_products,id'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
-            'payment_method' => ['required', Rule::in(['cash', 'ecocash', 'innbucks', 'swipe'])],
+            'payment_method' => ['required', Rule::in($this->paymentMethodService->enabledCodes())],
         ]);
+
+        $paymentMethod = $this->paymentMethodService->findEnabledByCode($validated['payment_method']);
+
+        if ($paymentMethod->isPrepay()) {
+            return back()->withErrors([
+                'payment_method' => 'This payment method must be completed in the mobile app before the order is placed.',
+            ]);
+        }
 
         $storeProducts = StoreProduct::query()
             ->with('product')
@@ -260,7 +276,7 @@ class OrderController extends Controller
             return back()->withErrors(['items' => $stockErrors->implode(' ')]);
         }
 
-        DB::transaction(function () use ($request, $validated, $lineItems, $selectedAddress): void {
+        DB::transaction(function () use ($request, $validated, $lineItems, $selectedAddress, $paymentMethod): void {
             $total = $lineItems->reduce(
                 fn (float $carry, array $item): float => $carry + ($item['quantity'] * (float) $item['store_product']->price),
                 0
@@ -279,7 +295,7 @@ class OrderController extends Controller
                 'delivery_fee' => $deliveryFee,
                 'platform_commission' => $platformCommission,
                 'total_amount' => round($subtotal + $deliveryFee, 2),
-                'payment_status' => $validated['payment_method'] === 'cash' ? 'pending_collection' : 'pending',
+                'payment_status' => $this->paymentMethodService->initialPaymentStatus($paymentMethod),
                 'delivery_address_id' => $selectedAddress->id,
                 'delivery_address' => $selectedAddress->address_line,
                 'customer_phone' => $validated['customer_phone'] ?? null,
@@ -340,7 +356,7 @@ class OrderController extends Controller
 
         return Inertia::render('Orders/Checkout', [
             'cart' => $this->cartPayload($request),
-            'paymentMethods' => ['cash', 'ecocash', 'innbucks', 'swipe'],
+            'paymentMethods' => $this->paymentMethodService->toCheckoutOptions(),
             'selectedAddress' => [
                 'id' => $selectedAddress->id,
                 'label' => $selectedAddress->label,
@@ -422,13 +438,21 @@ class OrderController extends Controller
             'customer_phone' => ['nullable', 'string', 'max:32'],
             'delivery_instructions' => ['required', 'string', 'max:500'],
             'notes' => ['nullable', 'string', 'max:500'],
-            'payment_method' => ['required', Rule::in(['cash', 'ecocash', 'innbucks', 'swipe'])],
+            'payment_method' => ['required', 'string', Rule::in($this->paymentMethodService->enabledCodes())],
             'store_scope' => ['required', Rule::in(['all', 'single'])],
             'selected_store_id' => ['nullable', 'integer', 'exists:stores,id'],
             'delivering_for_someone' => ['nullable', 'boolean'],
             'recipient_name' => ['nullable', 'string', 'max:120', 'required_if:delivering_for_someone,1'],
             'recipient_phone' => ['nullable', 'string', 'max:32', 'required_if:delivering_for_someone,1'],
         ]);
+
+        $paymentMethod = $this->paymentMethodService->findEnabledByCode($validated['payment_method']);
+
+        if ($paymentMethod->isPrepay()) {
+            return back()->withErrors([
+                'payment_method' => 'This payment method must be completed in the mobile app before the order is placed.',
+            ]);
+        }
 
         $cartLines = $this->cartLines($request);
 
@@ -462,7 +486,7 @@ class OrderController extends Controller
 
         $ordersCreated = collect();
 
-        DB::transaction(function () use ($request, $validated, $cartLines, $ordersCreated, $selectedAddress): void {
+        DB::transaction(function () use ($request, $validated, $cartLines, $ordersCreated, $selectedAddress, $paymentMethod): void {
             $groupedByStore = $cartLines->groupBy(fn (array $line): int => (int) $line['store_product']->store_id);
 
             foreach ($groupedByStore as $storeId => $storeLines) {
@@ -479,7 +503,7 @@ class OrderController extends Controller
                     'delivery_fee' => $deliveryFee,
                     'platform_commission' => $platformCommission,
                     'total_amount' => round($subtotal + $deliveryFee, 2),
-                    'payment_status' => $validated['payment_method'] === 'cash' ? 'pending_collection' : 'pending',
+                    'payment_status' => $this->paymentMethodService->initialPaymentStatus($paymentMethod),
                     'delivery_address_id' => $selectedAddress->id,
                     'delivery_address' => $selectedAddress->address_line,
                     'customer_phone' => $validated['customer_phone'] ?? null,

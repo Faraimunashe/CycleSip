@@ -48,6 +48,33 @@
       Zone is active
     </label>
 
+    <div>
+      <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Linked stores</label>
+      <p class="mb-3 text-xs text-slate-500 dark:text-slate-400">
+        Choose which stores serve customers inside this delivery zone.
+      </p>
+      <div v-if="availableStores.length" class="grid gap-2 sm:grid-cols-2">
+        <label
+          v-for="store in availableStores"
+          :key="store.id"
+          class="flex items-center gap-2 rounded-xl border border-indigo-100 px-3 py-2 text-sm dark:border-slate-700"
+        >
+          <input
+            type="checkbox"
+            class="rounded border-slate-300"
+            :checked="form.store_ids.includes(store.id)"
+            @change="toggleStore(store.id)"
+          >
+          <span class="text-slate-700 dark:text-slate-300">
+            {{ store.name }}
+            <span v-if="!store.is_active" class="text-xs text-rose-500">(inactive)</span>
+          </span>
+        </label>
+      </div>
+      <p v-else class="text-sm text-slate-500 dark:text-slate-400">No stores exist yet. Create a store first.</p>
+      <p v-if="form.errors.store_ids" class="mt-1 text-xs text-rose-600">{{ form.errors.store_ids }}</p>
+    </div>
+
     <div class="flex justify-end">
       <button type="submit" class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-500" :disabled="form.processing">
         {{ submitLabel }}
@@ -57,10 +84,14 @@
 </template>
 
 <script setup>
-defineProps({
+const props = defineProps({
   form: {
     type: Object,
     required: true,
+  },
+  availableStores: {
+    type: Array,
+    default: () => [],
   },
   submitLabel: {
     type: String,
@@ -69,4 +100,15 @@ defineProps({
 });
 
 defineEmits(['submit']);
+
+const toggleStore = storeId => {
+  const selected = props.form.store_ids || [];
+
+  if (selected.includes(storeId)) {
+    props.form.store_ids = selected.filter(id => id !== storeId);
+    return;
+  }
+
+  props.form.store_ids = [...selected, storeId];
+};
 </script>

@@ -6,12 +6,18 @@ use App\Events\RiderStatusUpdated;
 use App\Http\Controllers\Api\V1\Concerns\RespondsWithJson;
 use App\Http\Controllers\Controller;
 use App\Models\RiderProfile;
+use App\Services\RiderLocationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class PresenceController extends Controller
 {
     use RespondsWithJson;
+
+    public function __construct(
+        private readonly RiderLocationService $riderLocationService,
+    ) {
+    }
 
     public function update(Request $request): JsonResponse
     {
@@ -31,11 +37,11 @@ class PresenceController extends Controller
         ]);
 
         if (isset($validated['latitude'], $validated['longitude'])) {
-            $riderProfile->locations()->create([
-                'latitude' => $validated['latitude'],
-                'longitude' => $validated['longitude'],
-                'recorded_at' => now(),
-            ]);
+            $this->riderLocationService->record(
+                profile: $riderProfile,
+                latitude: (float) $validated['latitude'],
+                longitude: (float) $validated['longitude'],
+            );
         }
 
         event(new RiderStatusUpdated($riderProfile->fresh()));

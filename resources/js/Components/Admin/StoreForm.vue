@@ -71,6 +71,33 @@
       Store is active
     </label>
 
+    <div>
+      <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Delivery zones</label>
+      <p class="mb-3 text-xs text-slate-500 dark:text-slate-400">
+        Link this store to one or more zones so customers in those areas can order from it.
+      </p>
+      <div v-if="availableZones.length" class="grid gap-2 sm:grid-cols-2">
+        <label
+          v-for="zone in availableZones"
+          :key="zone.id"
+          class="flex items-center gap-2 rounded-xl border border-indigo-100 px-3 py-2 text-sm dark:border-slate-700"
+        >
+          <input
+            type="checkbox"
+            class="rounded border-slate-300"
+            :checked="form.zone_ids.includes(zone.id)"
+            @change="toggleZone(zone.id)"
+          >
+          <span class="text-slate-700 dark:text-slate-300">
+            {{ zone.name }}
+            <span v-if="!zone.is_active" class="text-xs text-rose-500">(inactive)</span>
+          </span>
+        </label>
+      </div>
+      <p v-else class="text-sm text-slate-500 dark:text-slate-400">No delivery zones exist yet. Create a zone first.</p>
+      <p v-if="form.errors.zone_ids" class="mt-1 text-xs text-rose-600">{{ form.errors.zone_ids }}</p>
+    </div>
+
     <div class="flex items-center justify-end gap-2">
       <button
         type="submit"
@@ -98,11 +125,26 @@ const props = defineProps({
     type: String,
     default: '',
   },
+  availableZones: {
+    type: Array,
+    default: () => [],
+  },
   submitLabel: {
     type: String,
     default: 'Save store',
   },
 });
+
+const toggleZone = zoneId => {
+  const selected = props.form.zone_ids || [];
+
+  if (selected.includes(zoneId)) {
+    props.form.zone_ids = selected.filter(id => id !== zoneId);
+    return;
+  }
+
+  props.form.zone_ids = [...selected, zoneId];
+};
 
 const uploadedPreviewUrl = ref('');
 

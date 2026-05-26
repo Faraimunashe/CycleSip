@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Api;
 
+use App\Models\DeliveryZone;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Store;
@@ -9,7 +10,11 @@ use App\Models\StoreProduct;
 use App\Models\User;
 use App\Models\UserAddress;
 use Database\Seeders\LaratrustSeeder;
+use Database\Seeders\PaymentMethodSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Log\Events\MessageLogged;
+use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -22,6 +27,7 @@ class MobileApiTest extends TestCase
         parent::setUp();
 
         $this->seed(LaratrustSeeder::class);
+        $this->seed(PaymentMethodSeeder::class);
     }
 
     public function test_register_returns_sanctum_token_and_customer_role(): void
@@ -68,6 +74,81 @@ class MobileApiTest extends TestCase
             ->assertJsonPath('data.user.has_rider_role', true)
             ->assertJsonPath('data.user.can_use_rider_mode', true)
             ->assertJsonCount(2, 'data.user.roles');
+    }
+
+    public function test_login_issues_and_logs_verification_code_for_unverified_user(): void
+    {
+        Event::fake([MessageLogged::class]);
+
+        $user = User::factory()->unverified()->create([
+            'email' => 'unverified@example.com',
+            'password' => 'password123',
+            'date_of_birth' => now()->subYears(30)->format('Y-m-d'),
+            'age_verified_at' => now(),
+            'status' => 'active',
+        ]);
+        $user->addRole('customer');
+
+        $response = $this->postJson('/api/v1/auth/login', [
+            'email' => 'unverified@example.com',
+            'password' => 'password123',
+        ]);
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('data.user.email_verified', false)
+            ->assertJsonPath('message', 'Signed in successfully. Verify your email with the code sent to your inbox.');
+
+        $this->assertDatabaseHas('email_verification_codes', [
+            'user_id' => $user->id,
+        ]);
+
+        Event::assertDispatched(MessageLogged::class, function (MessageLogged $event): bool {
+            return $event->level === 'info'
+                && str_contains($event->message, 'Email verification OTP issued.')
+                && ($event->context['context'] ?? null) === 'login'
+                && ($event->context['email'] ?? null) === 'unverified@example.com'
+                && preg_match('/^\d{6}$/', (string) ($event->context['code'] ?? '')) === 1;
+        });
+    }
+
+    public function test_address_coverage_endpoint_returns_nearby_stores(): void
+    {
+        $this->seed(\Database\Seeders\CatalogSeeder::class);
+
+        Sanctum::actingAs($this->verifiedCustomer());
+
+        $this->getJson('/api/v1/addresses/coverage?latitude=-17.8252&longitude=31.0335')
+            ->assertOk()
+            ->assertJsonPath('data.is_serviceable', true)
+            ->assertJsonPath('data.matching_zone.name', 'University Core')
+            ->assertJsonPath('data.store_count', 2);
+    }
+
+    public function test_address_store_requires_coordinates_in_serviceable_zone(): void
+    {
+        $this->seed(\Database\Seeders\CatalogSeeder::class);
+
+        Sanctum::actingAs($this->verifiedCustomer());
+
+        $this->postJson('/api/v1/addresses', [
+            'label' => 'Home',
+            'address_line' => '1 University Road',
+            'latitude' => -17.8252,
+            'longitude' => 31.0335,
+            'is_default' => true,
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.coverage.is_serviceable', true);
+
+        $this->postJson('/api/v1/addresses', [
+            'label' => 'Far',
+            'address_line' => 'Outside zone',
+            'latitude' => -18.5000,
+            'longitude' => 30.0000,
+        ])
+            ->assertStatus(422)
+            ->assertJsonPath('code', 'delivery_location_unserviceable');
     }
 
     public function test_unverified_customer_cannot_access_catalog(): void
@@ -189,12 +270,87 @@ class MobileApiTest extends TestCase
                         'status',
                         'items',
                         'timeline',
+                        'progress_steps',
                         'order_rating',
                         'rider_rating',
                         'can_rate',
                     ],
                 ],
             ]);
+    }
+
+    public function test_prepaid_ecocash_checkout_places_paid_order(): void
+    {
+        config([
+            'ecocash.api_key' => 'test-ecocash-key',
+            'ecocash.mode' => 'sandbox',
+        ]);
+
+        Http::fake([
+            '*' => Http::response(['message' => 'Payment successful'], 200),
+        ]);
+
+        $customer = $this->verifiedCustomer(withAddress: true);
+        $storeProduct = $this->createStoreProduct(stock: 4, price: 15.00);
+
+        Sanctum::actingAs($customer);
+
+        $this->postJson('/api/v1/cart/items', [
+            'store_product_id' => $storeProduct->id,
+            'quantity' => 1,
+        ]);
+
+        $checkout = $this->postJson('/api/v1/checkout/pay', [
+            'delivery_instructions' => 'EcoCash prepay order',
+            'payment_method' => 'ecocash',
+            'customer_msisdn' => '+263771234567',
+            'store_scope' => 'all',
+        ]);
+
+        $checkout
+            ->assertCreated()
+            ->assertJsonPath('data.payment_status', 'paid')
+            ->assertJsonCount(1, 'data.order_ids');
+
+        $order = Order::query()->findOrFail($checkout->json('data.order_ids.0'));
+        $this->assertSame(Order::STATUS_BROADCAST_TO_RIDERS, $order->status);
+        $this->assertSame(Order::PAYMENT_STATUS_PAID, $order->payment_status);
+        $this->assertNotNull($order->paid_at);
+        $this->assertSame('ecocash', $order->payment_method);
+
+        Http::assertSentCount(1);
+    }
+
+    public function test_standard_checkout_routes_prepaid_method_to_pay_flow(): void
+    {
+        config([
+            'ecocash.api_key' => 'test-ecocash-key',
+            'ecocash.mode' => 'sandbox',
+        ]);
+
+        Http::fake([
+            '*' => Http::response(['message' => 'Payment successful'], 200),
+        ]);
+
+        $customer = $this->verifiedCustomer(withAddress: true);
+        $storeProduct = $this->createStoreProduct(stock: 2, price: 8.00);
+
+        Sanctum::actingAs($customer);
+
+        $this->postJson('/api/v1/cart/items', [
+            'store_product_id' => $storeProduct->id,
+            'quantity' => 1,
+        ]);
+
+        $this->postJson('/api/v1/checkout', [
+            'delivery_instructions' => 'EcoCash via standard endpoint',
+            'payment_method' => 'ecocash',
+            'customer_msisdn' => '+263771234567',
+            'store_scope' => 'all',
+        ])
+            ->assertCreated()
+            ->assertJsonPath('data.payment_status', 'paid')
+            ->assertJsonCount(1, 'data.order_ids');
     }
 
     public function test_rider_can_access_dashboard_and_accept_order(): void
@@ -207,9 +363,20 @@ class MobileApiTest extends TestCase
             'store_product_id' => $storeProduct->id,
             'quantity' => 1,
         ]);
-        $orderId = $this->postJson('/api/v1/checkout', [
+
+        config([
+            'ecocash.api_key' => 'test-ecocash-key',
+            'ecocash.mode' => 'sandbox',
+        ]);
+
+        Http::fake([
+            '*' => Http::response(['message' => 'Payment successful'], 200),
+        ]);
+
+        $orderId = $this->postJson('/api/v1/checkout/pay', [
             'delivery_instructions' => 'Call on arrival',
             'payment_method' => 'ecocash',
+            'customer_msisdn' => '+263771234567',
             'store_scope' => 'all',
         ])->json('data.order_ids.0');
 
@@ -299,7 +466,22 @@ class MobileApiTest extends TestCase
 
     private function createStoreProduct(int $stock, float $price): StoreProduct
     {
+        $zone = DeliveryZone::query()->firstOrCreate(
+            ['slug' => 'test-zone'],
+            [
+                'name' => 'Test Zone',
+                'center_latitude' => -17.8252,
+                'center_longitude' => 31.0335,
+                'radius_km' => 10,
+                'base_delivery_fee' => 2.50,
+                'distance_surcharge_per_km' => 0.75,
+                'estimated_minutes' => 30,
+                'is_active' => true,
+            ],
+        );
+
         $store = Store::factory()->create(['is_active' => true]);
+        $store->zones()->sync([$zone->id]);
         $product = Product::factory()->create(['is_active' => true]);
 
         return StoreProduct::query()->create([

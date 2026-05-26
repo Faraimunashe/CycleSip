@@ -170,6 +170,14 @@ class User extends Authenticatable implements LaratrustUser
         return $this->hasOne(RiderProfile::class);
     }
 
+    /**
+     * @return HasMany<PushToken, $this>
+     */
+    public function pushTokens(): HasMany
+    {
+        return $this->hasMany(PushToken::class);
+    }
+
     public function isActive(): bool
     {
         return $this->status === 'active';

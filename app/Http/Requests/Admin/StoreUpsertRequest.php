@@ -34,6 +34,8 @@ class StoreUpsertRequest extends FormRequest
             'closing_time' => ['nullable', 'date_format:H:i'],
             'commission_rate' => ['required', 'numeric', 'min:0', 'max:100'],
             'is_active' => ['required', 'boolean'],
+            'zone_ids' => ['nullable', 'array'],
+            'zone_ids.*' => ['integer', 'exists:delivery_zones,id'],
         ];
     }
 }

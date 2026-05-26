@@ -32,6 +32,7 @@ return [
             'manage-stores',
             'manage-users',
             'view-analytics',
+            'manage-payments',
             'manage-zones',
             'approve-riders',
             'approve-stores',

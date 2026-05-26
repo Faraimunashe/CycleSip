@@ -64,7 +64,7 @@ class AuthController extends Controller
             ]);
         }
 
-        $this->emailVerificationService->issueCode($user);
+        $this->emailVerificationService->issueCode($user, 'register');
 
         $token = $user->createToken('mobile')->plainTextToken;
 
@@ -96,14 +96,22 @@ class AuthController extends Controller
             return $this->error('Your account is not active.', 403);
         }
 
+        if (! $user->hasVerifiedEmail()) {
+            $this->emailVerificationService->issueCode($user, 'login');
+        }
+
         $tokenName = $validated['device_name'] ?? 'mobile';
         $token = $user->createToken($tokenName)->plainTextToken;
+
+        $message = $user->hasVerifiedEmail()
+            ? 'Signed in successfully.'
+            : 'Signed in successfully. Verify your email with the code sent to your inbox.';
 
         return $this->ok([
             'token' => $token,
             'token_type' => 'Bearer',
             'user' => UserResource::make($this->loadUserRelations($user))->resolve(),
-        ], 'Signed in successfully.');
+        ], $message);
     }
 
     public function logout(Request $request): JsonResponse

@@ -46,6 +46,7 @@ class PhaseOneFlowTest extends TestCase
     public function test_customer_can_place_order(): void
     {
         $this->seed(LaratrustSeeder::class);
+        $this->seed(\Database\Seeders\PaymentMethodSeeder::class);
 
         $customer = User::factory()->create();
         $customer->addRole('customer');

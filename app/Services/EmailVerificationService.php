@@ -11,7 +11,7 @@ use InvalidArgumentException;
 
 class EmailVerificationService
 {
-    public function issueCode(User $user): string
+    public function issueCode(User $user, string $context = 'issue'): string
     {
         EmailVerificationCode::query()
             ->where('user_id', $user->id)
@@ -19,19 +19,21 @@ class EmailVerificationService
             ->delete();
 
         $plainCode = (string) random_int(100000, 999999);
+        $expiresAt = now()->addMinutes(15);
 
         EmailVerificationCode::create([
             'user_id' => $user->id,
             'code_hash' => Hash::make($plainCode),
-            'expires_at' => now()->addMinutes(15),
+            'expires_at' => $expiresAt,
         ]);
 
         if (! app()->isProduction()) {
-            Log::info('Email verification OTP issued (dev only).', [
+            Log::info('Email verification OTP issued.', [
+                'context' => $context,
                 'user_id' => $user->id,
                 'email' => $user->email,
                 'code' => $plainCode,
-                'expires_at' => now()->addMinutes(15)->toIso8601String(),
+                'expires_at' => $expiresAt->toIso8601String(),
             ]);
         }
 
@@ -68,6 +70,6 @@ class EmailVerificationService
             throw new InvalidArgumentException('Email is already verified.');
         }
 
-        $this->issueCode($user);
+        $this->issueCode($user, 'resend');
     }
 }

@@ -2,12 +2,11 @@
 
 namespace App\Jobs;
 
-use App\Events\OrderStatusChanged;
+use App\Events\OrderAvailableForRiders;
 use App\Models\Order;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 
-class BroadcastOrderToRidersJob implements ShouldQueue
+class BroadcastOrderToRidersJob
 {
     use Queueable;
 
@@ -17,17 +16,12 @@ class BroadcastOrderToRidersJob implements ShouldQueue
 
     public function handle(): void
     {
-        $order = Order::query()->find($this->orderId);
+        $order = Order::query()->with(['store', 'user'])->find($this->orderId);
 
-        if (! $order) {
+        if (! $order || $order->status !== Order::STATUS_BROADCAST_TO_RIDERS) {
             return;
         }
 
-        event(new OrderStatusChanged(
-            order: $order,
-            fromStatus: $order->getOriginal('status') ?? $order->status,
-            toStatus: $order->status,
-            changedBy: null,
-        ));
+        event(new OrderAvailableForRiders($order));
     }
 }

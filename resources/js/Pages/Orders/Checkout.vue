@@ -208,8 +208,13 @@
               Payment method
             </label>
             <select v-model="form.payment_method" class="w-full rounded-xl border border-indigo-100 bg-white px-3 py-2 text-sm dark:border-slate-700 dark:bg-slate-950/70">
-              <option v-for="method in paymentMethods" :key="method" :value="method">{{ method }}</option>
+              <option v-for="method in paymentMethods" :key="method.code" :value="method.code">
+                {{ method.name }} — {{ method.timing === 'prepay' ? 'Pay now (mobile only)' : 'Pay on delivery' }}
+              </option>
             </select>
+            <p v-if="selectedPaymentMethod?.timing === 'prepay'" class="mt-2 text-xs text-amber-700">
+              Prepaid methods are completed in the mobile app. Choose cash or card swipe to place orders on the web.
+            </p>
           </div>
           <div>
             <label class="mb-1 inline-flex items-center gap-1.5 text-sm font-medium text-slate-700">
@@ -281,13 +286,17 @@ const form = useForm({
   customer_phone: '',
   delivery_instructions: '',
   notes: '',
-  payment_method: 'cash',
+  payment_method: props.paymentMethods[0]?.code ?? 'cash',
   store_scope: 'all',
   selected_store_id: null,
   delivering_for_someone: false,
   recipient_name: '',
   recipient_phone: '',
 });
+
+const selectedPaymentMethod = computed(() =>
+  props.paymentMethods.find((method) => method.code === form.payment_method) ?? null,
+);
 
 const quantities = reactive(
   Object.fromEntries(

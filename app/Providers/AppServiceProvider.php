@@ -2,12 +2,17 @@
 
 namespace App\Providers;
 
+use App\Events\OrderAvailableForRiders;
+use App\Events\OrderStatusChanged;
+use App\Listeners\SendOrderAvailablePushNotification;
+use App\Listeners\SendOrderStatusPushNotification;
 use App\Models\Order;
 use App\Models\RiderProfile;
 use App\Models\Store;
 use App\Policies\OrderPolicy;
 use App\Policies\RiderProfilePolicy;
 use App\Policies\StorePolicy;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
@@ -26,6 +31,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        Event::listen(OrderStatusChanged::class, SendOrderStatusPushNotification::class);
+        Event::listen(OrderAvailableForRiders::class, SendOrderAvailablePushNotification::class);
+
         Gate::before(function ($user, string $ability) {
             if ($user->hasRole('super-admin')) {
                 return true;

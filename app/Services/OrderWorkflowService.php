@@ -43,7 +43,7 @@ class OrderWorkflowService
     public function broadcastToRiders(Order $order): void
     {
         $this->transition($order, Order::STATUS_BROADCAST_TO_RIDERS, null, 'Order broadcast to riders');
-        BroadcastOrderToRidersJob::dispatch($order->id);
+        BroadcastOrderToRidersJob::dispatchSync($order->id);
     }
 
     public function transition(Order $order, string $toStatus, ?int $userId = null, ?string $note = null): Order

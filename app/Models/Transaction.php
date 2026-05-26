@@ -9,6 +9,7 @@ class Transaction extends Model
 {
     protected $fillable = [
         'order_id',
+        'checkout_session_id',
         'user_id',
         'reference',
         'method',
@@ -23,6 +24,14 @@ class Transaction extends Model
         return [
             'meta' => 'array',
         ];
+    }
+
+    /**
+     * @return BelongsTo<CheckoutSession, $this>
+     */
+    public function checkoutSession(): BelongsTo
+    {
+        return $this->belongsTo(CheckoutSession::class);
     }
 
     /**

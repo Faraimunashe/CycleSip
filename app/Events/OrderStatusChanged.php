@@ -40,10 +40,19 @@ class OrderStatusChanged implements ShouldBroadcastNow
      */
     public function broadcastWith(): array
     {
+        $this->order->loadMissing(['store', 'rider']);
+
         return [
             'order_id' => $this->order->id,
             'from_status' => $this->fromStatus,
             'to_status' => $this->toStatus,
+            'status' => $this->order->status,
+            'payment_status' => $this->order->payment_status,
+            'store_name' => $this->order->store?->name,
+            'total_amount' => (float) $this->order->total_amount,
+            'delivery_address' => $this->order->delivery_address,
+            'rider_id' => $this->order->rider_id,
+            'rider_name' => $this->order->rider?->name,
             'changed_by' => $this->changedBy,
             'updated_at' => optional($this->order->updated_at)?->toIso8601String(),
         ];

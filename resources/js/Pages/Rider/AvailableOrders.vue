@@ -65,6 +65,7 @@
 <script setup>
 import { Head, Link, router } from '@inertiajs/vue3';
 import Layout from '@/Shared/Layout.vue';
+import { useRiderMarketplaceRealtime } from '@/composables/useOrderRealtime';
 
 defineProps({
   orders: {
@@ -76,4 +77,8 @@ defineProps({
 const accept = (orderId) => {
   router.patch(`/rider/orders/${orderId}/accept`);
 };
+
+useRiderMarketplaceRealtime(() => {
+  router.reload({ only: ['orders'], preserveScroll: true });
+});
 </script>

@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(LaratrustSeeder::class);
+        $this->call(PaymentMethodSeeder::class);
 
         $roleUsers = [
             'super-admin' => ['Super Admin', 'superadmin@cyclesip.app'],

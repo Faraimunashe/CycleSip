@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\DeliveryZoneUpsertRequest;
 use App\Models\DeliveryZone;
+use App\Models\Store;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -32,18 +33,23 @@ class ZoneManagementController extends Controller
     {
         return Inertia::render('Admin/Zones/Create', [
             'zone' => $this->defaultZonePayload(),
+            'availableStores' => $this->storeOptions(),
         ]);
     }
 
     public function store(DeliveryZoneUpsertRequest $request): RedirectResponse
     {
-        $zone = DeliveryZone::create($request->validated());
+        $validated = $request->validated();
+
+        $zone = DeliveryZone::create(collect($validated)->except('store_ids')->all());
+        $zone->stores()->sync($validated['store_ids'] ?? []);
 
         return to_route('admin.zones.show', $zone)->with('success', 'Delivery zone created.');
     }
 
     public function show(DeliveryZone $zone): Response
     {
+        $zone->load(['stores:id,name,slug']);
         $zone->loadCount(['stores', 'riderProfiles', 'orders']);
 
         return Inertia::render('Admin/Zones/Show', [
@@ -53,14 +59,20 @@ class ZoneManagementController extends Controller
 
     public function edit(DeliveryZone $zone): Response
     {
+        $zone->load('stores:id,name');
+
         return Inertia::render('Admin/Zones/Edit', [
             'zone' => $this->toZoneArray($zone),
+            'availableStores' => $this->storeOptions(),
         ]);
     }
 
     public function update(DeliveryZoneUpsertRequest $request, DeliveryZone $zone): RedirectResponse
     {
-        $zone->update($request->validated());
+        $validated = $request->validated();
+
+        $zone->update(collect($validated)->except('store_ids')->all());
+        $zone->stores()->sync($validated['store_ids'] ?? []);
 
         return to_route('admin.zones.show', $zone)->with('success', 'Delivery zone updated.');
     }
@@ -84,6 +96,16 @@ class ZoneManagementController extends Controller
             'stores_count' => $zone->stores_count ?? 0,
             'rider_profiles_count' => $zone->rider_profiles_count ?? 0,
             'orders_count' => $zone->orders_count ?? 0,
+            'stores' => $zone->relationLoaded('stores')
+                ? $zone->stores->map(fn (Store $store): array => [
+                    'id' => $store->id,
+                    'name' => $store->name,
+                    'slug' => $store->slug,
+                ])->values()->all()
+                : [],
+            'store_ids' => $zone->relationLoaded('stores')
+                ? $zone->stores->pluck('id')->values()->all()
+                : [],
             'created_at' => optional($zone->created_at)?->toIso8601String(),
             'updated_at' => optional($zone->updated_at)?->toIso8601String(),
         ];
@@ -104,6 +126,24 @@ class ZoneManagementController extends Controller
             'distance_surcharge_per_km' => 0.75,
             'estimated_minutes' => 25,
             'is_active' => true,
+            'store_ids' => [],
         ];
+    }
+
+    /**
+     * @return list<array{id: int, name: string, is_active: bool}>
+     */
+    private function storeOptions(): array
+    {
+        return Store::query()
+            ->orderBy('name')
+            ->get(['id', 'name', 'is_active'])
+            ->map(fn (Store $store): array => [
+                'id' => $store->id,
+                'name' => $store->name,
+                'is_active' => (bool) $store->is_active,
+            ])
+            ->values()
+            ->all();
     }
 }

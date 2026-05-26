@@ -15,6 +15,10 @@
         </div>
       </header>
 
+      <p v-if="liveMessage" class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm text-emerald-800">
+        {{ liveMessage }}
+      </p>
+
       <section class="grid gap-4 md:grid-cols-2">
         <article class="glass rounded-2xl p-5 shadow-sm">
           <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-600">Delivery & Contacts</h3>
@@ -62,6 +66,38 @@
             <p class="text-sm font-semibold text-slate-800">${{ Number(item.line_total || 0).toFixed(2) }}</p>
           </article>
         </div>
+      </section>
+
+      <section class="glass rounded-2xl p-5 shadow-sm">
+        <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-600">Order progress</h3>
+        <div v-if="!order.progress_steps?.length" class="text-sm text-slate-600">
+          No progress updates yet.
+        </div>
+        <ol v-else class="space-y-3">
+          <li
+            v-for="step in order.progress_steps"
+            :key="step.key"
+            class="flex items-start gap-3 rounded-xl border border-indigo-100 bg-white/90 px-3 py-2"
+          >
+            <span
+              class="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+              :class="step.failed
+                ? 'bg-rose-100 text-rose-700'
+                : step.completed
+                  ? 'bg-emerald-100 text-emerald-700'
+                  : 'bg-slate-100 text-slate-500'"
+            >
+              {{ step.failed ? '!' : step.completed ? '✓' : '·' }}
+            </span>
+            <div class="min-w-0 flex-1">
+              <div class="flex flex-wrap items-center justify-between gap-2">
+                <p class="text-sm font-semibold text-slate-900">{{ step.label }}</p>
+                <p v-if="step.at" class="text-xs text-slate-500">{{ formatDate(step.at) }}</p>
+              </div>
+              <p v-if="step.type === 'payment'" class="text-xs text-slate-500">Payment step</p>
+            </div>
+          </li>
+        </ol>
       </section>
 
       <section class="glass rounded-2xl p-5 shadow-sm">
@@ -164,14 +200,23 @@
 </template>
 
 <script setup>
-import { Head, useForm } from '@inertiajs/vue3';
+import { Head, router, useForm } from '@inertiajs/vue3';
+import { ref } from 'vue';
 import Layout from '@/Shared/Layout.vue';
+import { useOrderRealtime } from '@/composables/useOrderRealtime';
 
 const props = defineProps({
   order: {
     type: Object,
     required: true,
   },
+});
+
+const liveMessage = ref('');
+
+useOrderRealtime(props.order.id, ({ type }) => {
+  liveMessage.value = type === 'location' ? 'Rider location updated.' : 'Order status updated.';
+  router.reload({ only: ['order'], preserveScroll: true });
 });
 
 const prettyStatus = (status) => status ? status.replaceAll('_', ' ') : 'unknown';

@@ -8,7 +8,13 @@
         <p class="text-sm text-slate-600 dark:text-slate-400">Update store details, schedule, and logo.</p>
       </header>
 
-      <StoreForm :form="form" :existing-image-url="store.logo_url || ''" submit-label="Update store" @submit="submit" />
+      <StoreForm
+        :form="form"
+        :existing-image-url="store.logo_url || ''"
+        :available-zones="availableZones"
+        submit-label="Update store"
+        @submit="submit"
+      />
     </div>
   </AdminLayout>
 </template>
@@ -22,6 +28,10 @@ const props = defineProps({
   store: {
     type: Object,
     required: true,
+  },
+  availableZones: {
+    type: Array,
+    default: () => [],
   },
 });
 
@@ -37,6 +47,7 @@ const form = useForm({
   closing_time: props.store.closing_time || '',
   commission_rate: props.store.commission_rate,
   is_active: props.store.is_active,
+  zone_ids: props.store.zone_ids || [],
   _method: 'put',
 });
 

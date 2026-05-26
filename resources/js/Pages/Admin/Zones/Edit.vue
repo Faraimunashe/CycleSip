@@ -8,7 +8,7 @@
         <p class="text-sm text-slate-600 dark:text-slate-400">Update operational coverage, fees, and time estimates.</p>
       </header>
 
-      <ZoneForm :form="form" submit-label="Update zone" @submit="submit" />
+      <ZoneForm :form="form" :available-stores="availableStores" submit-label="Update zone" @submit="submit" />
     </div>
   </AdminLayout>
 </template>
@@ -23,6 +23,10 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  availableStores: {
+    type: Array,
+    default: () => [],
+  },
 });
 
 const form = useForm({
@@ -35,6 +39,7 @@ const form = useForm({
   distance_surcharge_per_km: props.zone.distance_surcharge_per_km,
   estimated_minutes: props.zone.estimated_minutes,
   is_active: props.zone.is_active,
+  store_ids: props.zone.store_ids || [],
 });
 
 const submit = () => {

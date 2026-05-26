@@ -32,6 +32,8 @@ class DeliveryZoneUpsertRequest extends FormRequest
             'distance_surcharge_per_km' => ['required', 'numeric', 'min:0'],
             'estimated_minutes' => ['required', 'integer', 'min:5', 'max:180'],
             'is_active' => ['required', 'boolean'],
+            'store_ids' => ['nullable', 'array'],
+            'store_ids.*' => ['integer', 'exists:stores,id'],
         ];
     }
 }

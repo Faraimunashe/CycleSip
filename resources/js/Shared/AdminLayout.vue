@@ -51,6 +51,7 @@ import {
   Wallet,
   Store,
   MapPinned,
+  CreditCard,
 } from '@lucide/vue';
 import BrandMark from '@/Shared/BrandMark.vue';
 import Layout from '@/Shared/Layout.vue';
@@ -66,6 +67,7 @@ const menu = [
   { label: 'Products', href: '/admin/products', icon: Package },
   { label: 'Zones', href: '/admin/zones', icon: MapPinned },
   { label: 'Finance', href: '/admin/finance', icon: Wallet },
+  { label: 'Payment Methods', href: '/admin/payment-methods', icon: CreditCard },
   { label: 'Customers', href: '/admin/customers', icon: Users },
 ];
 </script>

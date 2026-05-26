@@ -7,12 +7,20 @@ use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\OrderRating;
 use App\Models\RiderRating;
+use App\Services\OrderProgressService;
+use App\Services\RiderLocationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class CustomerOrderController extends Controller
 {
     use RespondsWithJson;
+
+    public function __construct(
+        private readonly OrderProgressService $orderProgressService,
+        private readonly RiderLocationService $riderLocationService,
+    ) {
+    }
 
     public function index(Request $request): JsonResponse
     {
@@ -162,6 +170,7 @@ class CustomerOrderController extends Controller
                 'name' => $order->rider?->name,
                 'phone' => $order->rider?->phone,
             ],
+            'rider_location' => $this->riderLocationService->latestForOrder($order),
             'items' => $order->items->map(fn ($item): array => [
                 'id' => $item->id,
                 'product_id' => $item->product_id,
@@ -177,6 +186,7 @@ class CustomerOrderController extends Controller
                 'changed_by' => $entry->changedBy?->name,
                 'created_at' => optional($entry->created_at)?->toIso8601String(),
             ])->values(),
+            'progress_steps' => $this->orderProgressService->stepsForOrder($order),
             'order_rating' => $order->orderRating
                 ? [
                     'rating' => (int) $order->orderRating->rating,

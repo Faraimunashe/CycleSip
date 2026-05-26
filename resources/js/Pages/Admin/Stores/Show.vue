@@ -24,19 +24,27 @@
         <p><span class="font-semibold">Hours:</span> {{ store.opening_time || '--:--' }} - {{ store.closing_time || '--:--' }}</p>
         <p><span class="font-semibold">Commission:</span> {{ store.commission_rate }}%</p>
         <p><span class="font-semibold">Status:</span> {{ store.is_active ? 'Active' : 'Inactive' }}</p>
-        <p><span class="font-semibold">Zones:</span> {{ store.zones.map(z => z.name).join(', ') || 'Not assigned' }}</p>
+        <p>
+          <span class="font-semibold">Zones:</span>
+          <template v-if="store.zones.length">
+            <Link
+              v-for="(zone, index) in store.zones"
+              :key="zone.id"
+              :href="`/admin/zones/${zone.id}`"
+              class="font-medium text-indigo-700 hover:underline dark:text-indigo-300"
+            >
+              {{ zone.name }}<span v-if="index < store.zones.length - 1">, </span>
+            </Link>
+          </template>
+          <span v-else>Not assigned</span>
+        </p>
       </section>
 
-      <section class="rounded-2xl border border-indigo-100/90 bg-white/95 p-5 shadow-sm backdrop-blur-xl dark:border-slate-700/45 dark:bg-slate-900/60">
-        <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Inventory</h3>
-        <ul class="space-y-2 text-sm text-slate-700 dark:text-slate-300">
-          <li v-for="item in store.inventory" :key="item.id" class="flex items-center justify-between rounded-xl border border-indigo-100/70 px-3 py-2 dark:border-slate-700/50">
-            <span>{{ item.product_name || 'Unknown product' }}</span>
-            <span>Stock: {{ item.stock_quantity }} | ${{ item.price.toFixed(2) }}</span>
-          </li>
-          <li v-if="store.inventory.length === 0" class="text-slate-500 dark:text-slate-400">No inventory entries.</li>
-        </ul>
-      </section>
+      <StoreInventoryPanel
+        :store-id="store.id"
+        :inventory="store.inventory || []"
+        :available-products="availableProducts"
+      />
     </div>
   </AdminLayout>
 </template>
@@ -44,12 +52,17 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
 import EntityImage from '@/Components/Admin/EntityImage.vue';
+import StoreInventoryPanel from '@/Components/Admin/StoreInventoryPanel.vue';
 import AdminLayout from '@/Shared/AdminLayout.vue';
 
 defineProps({
   store: {
     type: Object,
     required: true,
+  },
+  availableProducts: {
+    type: Array,
+    default: () => [],
   },
 });
 </script>

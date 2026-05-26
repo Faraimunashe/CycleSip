@@ -1,8 +1,10 @@
 <?php
 
 use App\Http\Controllers\Admin\OrderManagementController;
+use App\Http\Controllers\Admin\PaymentMethodController;
 use App\Http\Controllers\Admin\ProductManagementController;
 use App\Http\Controllers\Admin\RiderManagementController;
+use App\Http\Controllers\Admin\StoreInventoryController;
 use App\Http\Controllers\Admin\StoreManagementController;
 use App\Http\Controllers\Admin\ZoneManagementController;
 use App\Http\Controllers\Admin\CustomerManagementController;
@@ -127,6 +129,15 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::put('/stores/{store}', [StoreManagementController::class, 'update'])
         ->middleware('can:manage-stores')
         ->name('stores.update');
+    Route::post('/stores/{store}/inventory', [StoreInventoryController::class, 'store'])
+        ->middleware('can:manage-stores')
+        ->name('stores.inventory.store');
+    Route::patch('/stores/{store}/inventory/{storeProduct}', [StoreInventoryController::class, 'update'])
+        ->middleware('can:manage-stores')
+        ->name('stores.inventory.update');
+    Route::delete('/stores/{store}/inventory/{storeProduct}', [StoreInventoryController::class, 'destroy'])
+        ->middleware('can:manage-stores')
+        ->name('stores.inventory.destroy');
 
     Route::get('/products', [ProductManagementController::class, 'index'])
         ->middleware('can:manage-products')
@@ -176,6 +187,13 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/finance', [FinanceController::class, 'index'])
         ->middleware('can:manage-payments')
         ->name('finance.index');
+
+    Route::get('/payment-methods', [PaymentMethodController::class, 'index'])
+        ->middleware('can:manage-payments')
+        ->name('payment-methods.index');
+    Route::patch('/payment-methods/{paymentMethod}', [PaymentMethodController::class, 'update'])
+        ->middleware('can:manage-payments')
+        ->name('payment-methods.update');
 });
 
 Route::get('/welcome', function () {

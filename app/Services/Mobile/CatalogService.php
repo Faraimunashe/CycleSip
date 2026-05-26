@@ -3,19 +3,40 @@
 namespace App\Services\Mobile;
 
 use App\Models\Store;
+use App\Models\User;
+use App\Services\DeliveryZoneService;
 use App\Support\MediaUrl;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class CatalogService
 {
+    public function __construct(
+        private readonly DeliveryZoneService $deliveryZoneService,
+    ) {
+    }
+
     /**
      * @return Collection<int, array<string, mixed>>
      */
-    public function storesWithInventory(): Collection
+    public function storesWithInventory(?float $latitude = null, ?float $longitude = null): Collection
     {
-        return Store::query()
-            ->where('is_active', true)
+        $query = Store::query()
+            ->where('is_active', true);
+
+        if ($latitude !== null && $longitude !== null) {
+            $storeIds = $this->deliveryZoneService
+                ->storesServingPoint($latitude, $longitude)
+                ->pluck('id');
+
+            if ($storeIds->isEmpty()) {
+                return collect();
+            }
+
+            $query->whereIn('id', $storeIds);
+        }
+
+        return $query
             ->with([
                 'inventory' => fn ($query) => $query
                     ->where('stock_quantity', '>', 0)

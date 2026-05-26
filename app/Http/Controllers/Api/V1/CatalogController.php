@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\V1\Concerns\RespondsWithJson;
 use App\Http\Controllers\Controller;
 use App\Services\Mobile\CartService;
 use App\Services\Mobile\CatalogService;
+use App\Services\Mobile\DeliveryAddressService;
+use App\Services\DeliveryZoneService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -16,6 +18,8 @@ class CatalogController extends Controller
     public function __construct(
         private readonly CatalogService $catalogService,
         private readonly CartService $cartService,
+        private readonly DeliveryAddressService $deliveryAddressService,
+        private readonly DeliveryZoneService $deliveryZoneService,
     ) {
     }
 
@@ -27,7 +31,11 @@ class CatalogController extends Controller
             'store_id' => ['nullable', 'integer', 'exists:stores,id'],
         ]);
 
-        $stores = $this->catalogService->storesWithInventory();
+        $selectedAddress = $this->deliveryAddressService->selected($request->user());
+        $latitude = $selectedAddress?->latitude;
+        $longitude = $selectedAddress?->longitude;
+
+        $stores = $this->catalogService->storesWithInventory($latitude, $longitude);
         $filtered = $this->catalogService->filterStores(
             stores: $stores,
             search: $validated['search'] ?? null,
@@ -36,6 +44,9 @@ class CatalogController extends Controller
         );
 
         $cart = $this->cartService->payload($request->user());
+        $coverage = ($latitude !== null && $longitude !== null)
+            ? $this->deliveryZoneService->coverageForPoint((float) $latitude, (float) $longitude)
+            : null;
 
         return $this->ok([
             'stores' => $filtered->values()->all(),
@@ -44,6 +55,7 @@ class CatalogController extends Controller
                 'item_count' => $cart['item_count'],
                 'line_count' => $cart['line_count'],
             ],
+            'delivery_coverage' => $coverage,
         ]);
     }
 }

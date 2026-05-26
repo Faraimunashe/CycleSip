@@ -27,6 +27,18 @@
         <p><span class="font-semibold">Stores Covered:</span> {{ zone.stores_count }}</p>
         <p><span class="font-semibold">Riders Assigned:</span> {{ zone.rider_profiles_count }}</p>
       </section>
+
+      <section class="rounded-2xl border border-indigo-100/90 bg-white/95 p-5 shadow-sm backdrop-blur-xl dark:border-slate-700/45 dark:bg-slate-900/60">
+        <h3 class="mb-3 text-sm font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-300">Linked stores</h3>
+        <ul class="space-y-2 text-sm text-slate-700 dark:text-slate-300">
+          <li v-for="store in zone.stores" :key="store.id">
+            <Link :href="`/admin/stores/${store.id}`" class="font-medium text-indigo-700 hover:underline dark:text-indigo-300">
+              {{ store.name }}
+            </Link>
+          </li>
+          <li v-if="zone.stores.length === 0" class="text-slate-500 dark:text-slate-400">No stores linked to this zone yet.</li>
+        </ul>
+      </section>
     </div>
   </AdminLayout>
 </template>

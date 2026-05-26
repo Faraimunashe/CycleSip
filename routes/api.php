@@ -8,12 +8,20 @@ use App\Http\Controllers\Api\V1\CatalogController;
 use App\Http\Controllers\Api\V1\CheckoutController;
 use App\Http\Controllers\Api\V1\CustomerOrderController;
 use App\Http\Controllers\Api\V1\IdentityController;
+use App\Http\Controllers\Api\V1\PushTokenController;
 use App\Http\Controllers\Api\V1\Rider\DashboardController as RiderDashboardController;
+use App\Http\Controllers\Api\V1\Rider\LocationController as RiderLocationController;
 use App\Http\Controllers\Api\V1\Rider\OrderController as RiderOrderController;
 use App\Http\Controllers\Api\V1\Rider\PresenceController as RiderPresenceController;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Broadcast;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
+    Route::middleware('auth:sanctum')->post('broadcasting/auth', function (Request $request) {
+        return Broadcast::auth($request);
+    });
+
     Route::prefix('auth')->group(function (): void {
         Route::post('register', [AuthController::class, 'register']);
         Route::post('login', [AuthController::class, 'login']);
@@ -28,8 +36,14 @@ Route::prefix('v1')->group(function (): void {
         });
     });
 
+    Route::middleware('auth:sanctum')->group(function (): void {
+        Route::post('push-tokens', [PushTokenController::class, 'store']);
+        Route::delete('push-tokens', [PushTokenController::class, 'destroy']);
+    });
+
     Route::middleware(['auth:sanctum', 'verified.api.email'])->group(function (): void {
         Route::get('addresses', [AddressController::class, 'index']);
+        Route::get('addresses/coverage', [AddressController::class, 'coverage']);
         Route::post('addresses', [AddressController::class, 'store']);
         Route::post('addresses/{address}/select', [AddressController::class, 'select']);
 
@@ -47,6 +61,8 @@ Route::prefix('v1')->group(function (): void {
 
             Route::get('checkout/preview', [CheckoutController::class, 'preview']);
             Route::post('checkout', [CheckoutController::class, 'store']);
+            Route::post('checkout/pay', [CheckoutController::class, 'pay']);
+            Route::get('checkout/sessions/{uuid}', [CheckoutController::class, 'showSession']);
         });
 
         Route::get('orders', [CustomerOrderController::class, 'index']);
@@ -64,6 +80,7 @@ Route::prefix('v1')->group(function (): void {
         Route::post('orders/{order}/accept', [RiderOrderController::class, 'accept']);
         Route::patch('orders/{order}/status', [RiderOrderController::class, 'updateStatus']);
         Route::patch('presence', [RiderPresenceController::class, 'update']);
+        Route::patch('location', [RiderLocationController::class, 'update']);
     });
 });
 

@@ -1,18 +1,21 @@
 import Echo from 'laravel-echo';
 import Pusher from 'pusher-js';
 
-if (import.meta.env.VITE_PUSHER_APP_KEY) {
+const reverbKey = import.meta.env.VITE_REVERB_APP_KEY;
+
+if (reverbKey) {
   window.Pusher = Pusher;
 
   window.Echo = new Echo({
-    broadcaster: 'pusher',
-    key: import.meta.env.VITE_PUSHER_APP_KEY,
-    cluster: import.meta.env.VITE_PUSHER_APP_CLUSTER ?? 'mt1',
-    wsHost: import.meta.env.VITE_PUSHER_HOST ?? window.location.hostname,
-    wsPort: Number(import.meta.env.VITE_PUSHER_PORT ?? 6001),
-    wssPort: Number(import.meta.env.VITE_PUSHER_PORT ?? 6001),
-    forceTLS: (import.meta.env.VITE_PUSHER_SCHEME ?? 'https') === 'https',
+    broadcaster: 'reverb',
+    key: reverbKey,
+    wsHost: import.meta.env.VITE_REVERB_HOST ?? window.location.hostname,
+    wsPort: Number(import.meta.env.VITE_REVERB_PORT ?? 8080),
+    wssPort: Number(import.meta.env.VITE_REVERB_PORT ?? 8080),
+    forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'http') === 'https',
     enabledTransports: ['ws', 'wss'],
+    disableStats: true,
+    authEndpoint: '/broadcasting/auth',
     withCredentials: true,
   });
 }

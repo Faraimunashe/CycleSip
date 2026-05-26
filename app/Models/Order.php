@@ -21,6 +21,17 @@ class Order extends Model
     public const STATUS_COMPLETED = 'completed';
     public const STATUS_CANCELLED = 'cancelled';
 
+    public const PAYMENT_STATUS_AWAITING = 'awaiting_payment';
+    public const PAYMENT_STATUS_PROCESSING = 'processing';
+    public const PAYMENT_STATUS_PAID = 'paid';
+    public const PAYMENT_STATUS_FAILED = 'failed';
+    public const PAYMENT_STATUS_PENDING_COLLECTION = 'pending_collection';
+
+    public const TIMELINE_PAYMENT_AWAITING = 'payment_awaiting';
+    public const TIMELINE_PAYMENT_PROCESSING = 'payment_processing';
+    public const TIMELINE_PAYMENT_PAID = 'payment_paid';
+    public const TIMELINE_PAYMENT_FAILED = 'payment_failed';
+
     public const ALLOWED_STATUSES = [
         self::STATUS_PENDING,
         self::STATUS_BROADCAST_TO_RIDERS,
@@ -41,6 +52,7 @@ class Order extends Model
         'store_id',
         'delivery_zone_id',
         'delivery_address_id',
+        'checkout_session_id',
         'status',
         'payment_method',
         'subtotal_amount',
@@ -55,6 +67,7 @@ class Order extends Model
         'notes',
         'delivery_instructions',
         'placed_at',
+        'paid_at',
         'accepted_at',
         'delivered_at',
         'completed_at',
@@ -66,6 +79,7 @@ class Order extends Model
     {
         return [
             'placed_at' => 'datetime',
+            'paid_at' => 'datetime',
             'accepted_at' => 'datetime',
             'delivered_at' => 'datetime',
             'completed_at' => 'datetime',
@@ -103,6 +117,14 @@ class Order extends Model
     public function zone(): BelongsTo
     {
         return $this->belongsTo(DeliveryZone::class, 'delivery_zone_id');
+    }
+
+    /**
+     * @return BelongsTo<CheckoutSession, $this>
+     */
+    public function checkoutSession(): BelongsTo
+    {
+        return $this->belongsTo(CheckoutSession::class);
     }
 
     /**

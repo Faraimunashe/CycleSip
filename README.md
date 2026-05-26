@@ -97,14 +97,22 @@ All seeded accounts use password `password`.
 
 ## Real-Time Notes
 
-- Frontend Echo bootstrap is ready in `resources/js/bootstrap/realtime.js`
-- Private channels are defined in `routes/channels.php`
-- Configure Pusher/Reverb environment variables to enable live updates:
-  - `VITE_PUSHER_APP_KEY`
-  - `VITE_PUSHER_APP_CLUSTER`
-  - `VITE_PUSHER_HOST`
-  - `VITE_PUSHER_PORT`
-  - `VITE_PUSHER_SCHEME`
+- Laravel Reverb is included for websocket broadcasting (`php artisan reverb:start`)
+- Set `BROADCAST_CONNECTION=reverb` and configure `REVERB_*` / `VITE_REVERB_*` in `.env`
+- Admin dashboard listens on `ops.orders` and `ops.riders`
+- Customer order pages listen on `orders.{id}` for status + rider GPS updates
+- Rider marketplace listens on `riders.marketplace` for newly broadcast orders
+- Mobile apps authenticate private channels via `POST /api/v1/broadcasting/auth` (Sanctum)
+- Rider GPS: `PATCH /api/v1/rider/location` while on active deliveries
+
+Mobile env (Expo):
+
+- `EXPO_PUBLIC_REVERB_APP_KEY` — same as `REVERB_APP_KEY`
+- `EXPO_PUBLIC_REVERB_HOST` — your machine LAN IP (not localhost on physical devices)
+- `EXPO_PUBLIC_REVERB_PORT` — default `8080`
+- `EXPO_PUBLIC_REVERB_SCHEME` — `http` for local dev
+
+Legacy Pusher cloud vars (`VITE_PUSHER_*`) are no longer required when using Reverb.
 
 ## Architecture Patterns Used
 
